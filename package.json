@@ -1,5 +1,5 @@
 {
-  "name": "@fullstackcraftllc/monaco-editor-automation-api",
+  "name": "@fullstackcraftllc/zoinkr",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "npm run build && node ./dist/index.js",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf ./dist/* && rm -rf ./audio/* && rm -rf ./video/*",
+    "clean": "rm -rf ./dist/* && rm -rf ./audio/*.mp3 && rm -rf ./video/*.mp4",
     "make-video": "npm run build && node ./dist/index.js",
     "scripts-char-count": "npm run build && node ./dist/scripts-char-count.js",
     "scripts-health-check": "npm run build && node ./dist/scripts-health-check.js"
@@ -18,6 +18,7 @@
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
     "isomorphic-fetch": "^3.0.0",
+    "monaco-editor": "^0.45.0",
     "openai": "^4.24.7",
     "puppeteer": "^21.7.0",
     "puppeteer-screen-recorder": "^2.1.2",

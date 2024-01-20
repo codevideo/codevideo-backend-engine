@@ -1,6 +1,6 @@
 import { Page } from "puppeteer";
 
-export const editAppendFile = async (
+export const editOnPrevLine = async (
   page: Page,
   id: number,
   filename: string,
@@ -10,11 +10,15 @@ export const editAppendFile = async (
   await page.evaluate(
     async (id, filename, script, code) => {
       const editor = (window as any).editor;
+      const currentValue = editor.getValue();
 
-      // loop over code characters with slight delay - appending to whatever is currently in the editor
+      // insert a new line at the beginning
+      editor.setValue("\n" + currentValue);
+
+      // now loop over code characters with slight delay - appending to the beginning of the editor
       for (const character of code) {
         const currentValue = editor.getValue();
-        editor.setValue(currentValue + character);
+        editor.setValue(character + currentValue);
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
     },

@@ -21,23 +21,23 @@ export const addAudioToVideo = async (
     });
   });
   await convert;
-  // now trim off first 500ms of final.mp4
-  const trim = new Promise<void>((resolve, reject) => {
-    const ffmpegCommand = `ffmpeg -i ./video/final.mp4 -ss 0.5 -c copy ./video/final-trimmed.mp4 -y`;
+  // TODO: doesn't work - adds black to beginning of video
+  // // now trim off first 500ms of final.mp4
+  // const trim = new Promise<void>((resolve, reject) => {
+  //   const ffmpegCommand = `ffmpeg -i ./video/final.mp4 -ss 0.5 -c copy ./video/final-trimmed.mp4 -y`;
 
-    exec(ffmpegCommand, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error executing ffmpeg command: ${error.message}`);
-        reject(error);
-      } else {
-        console.log(`FFmpeg command executed successfully.`);
-        resolve();
-      }
-    });
-  });
-  await trim;
-  // now use fs to move final-trimmed.mp4 to {videoFileNoExtension}.mp4 and delete final.mp4
-  fs.renameSync('./video/final-trimmed.mp4', `./video/${videoFileNoExtension}.mp4`);
-  fs.unlinkSync('./video/final.mp4');
+  //   exec(ffmpegCommand, (error, stdout, stderr) => {
+  //     if (error) {
+  //       console.error(`Error executing ffmpeg command: ${error.message}`);
+  //       reject(error);
+  //     } else {
+  //       console.log(`FFmpeg command executed successfully.`);
+  //       resolve();
+  //     }
+  //   });
+  // });
+  // await trim;
+  // now get rid of final by renaming it and overwriting the original video file
+  fs.renameSync('./video/final.mp4', `./video/${videoFileNoExtension}.mp4`);
   console.log(`Video file ${videoFileNoExtension}.mp4 created successfully.`);
 };

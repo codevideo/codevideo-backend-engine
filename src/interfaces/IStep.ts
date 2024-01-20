@@ -5,5 +5,6 @@ export interface IStep {
     script: string;
     scriptStart?: 'before' | 'during' | 'after';
     oldCode?: string;
+    specialCommands?: string[];
     code?: string;
 }

@@ -1,8 +1,9 @@
 import { exec } from 'child_process';
 
 export const buildAudioFile = (audioFolderPath: string, audioFiles: string[], audioStartTimes: number[]): Promise<void> => {
+  console.log("Combining audio files...")
+
   return new Promise<void>((resolve, reject) => {
-    console.log("Combining audio files...")
     const inputFiles = audioFiles.map((file, index) => `-i ${file}`).join(' ');
 
     const filterComplex = audioStartTimes
@@ -18,7 +19,7 @@ export const buildAudioFile = (audioFolderPath: string, audioFiles: string[], au
         console.error(`Error executing ffmpeg command: ${error.message}`);
         reject(error);
       } else {
-        console.log(`FFmpeg command executed successfully.`);
+        console.log(`Audio files combined successfully.`);
         resolve();
       }
     });

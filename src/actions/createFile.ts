@@ -8,7 +8,7 @@ export const createFile = async (
 ) => {
   await page.evaluate(
     async (id, filename, script) => {
-      (window as any).monaco.editor.getModels()[0].setValue("");
+      (window as any).editor.getModels()[0].setValue("");
     },
     id,
     filename,

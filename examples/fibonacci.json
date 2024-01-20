@@ -1,46 +1,55 @@
 [
     {
       "id": 1,
-      "script": "In this tutorial, we'll walk through the creation of a Fibonacci calculation function in TypeScript.",
+      "script": "In this quick tutorial, we'll walk through the creation of a Fibonacci calculation function in TypeScript.",
       "action": "talk-only"
     },
     {
       "id": 2,
       "script": "Let's begin by creating a new file named 'fibonacci.ts'.",
-      "action": "create",
-      "filename": "fibonacci.ts"
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "fibonacci.ts",
+      "code": "// fibonacci.ts\n"
     },
     {
       "id": 3,
-      "script": "Now, let's define the function signature. We want our function to calculate the nth Fibonacci number, so our function will take a single parameter, 'n', which represents the position in the Fibonacci sequence.",
-      "action": "edit-append",
+      "script": "Now, let's define the function signature. We want our function to calculate the nth Fibonacci number, so our function will take a single parameter 'n' of type 'number', which represents the position in the Fibonacci sequence, and also return a number.",
+      "scriptStart": "before",
+      "action": "edit",
       "filename": "fibonacci.ts",
-      "code": "const fibonacci = (n: number) => {}"
+      "code": "const fibonacci = (n: number): number => {\n\n}"
     },
     {
       "id": 4,
-      "script": "To help others understand our code, let's add a brief JSDoc comment explaining the purpose of the function and the meaning of the 'n' parameter.",
-      "action": "edit-add-on-prev-line",
+      "script": "To help others understand our code, let's add a brief JS Doc comment explaining the purpose of the function and the meaning of the 'n' parameter.",
+      "scriptStart": "before",
+      "action": "edit",
       "filename": "fibonacci.ts",
-      "code": "/**\n * Calculates the nth Fibonacci number.\n * @param n The position in the Fibonacci sequence.\n */"
+      "specialCommands": ["up", "up"],
+      "code": "/**\n * Calculates the nth Fibonacci number.\n * @param n The position in the Fibonacci sequence.\n */\n"
     },
     {
       "id": 5,
       "script": "Now, let's implement the Fibonacci logic inside our function.",
-      "action": "edit-append",
+      "scriptStart": "before",
+      "action": "edit",
       "filename": "fibonacci.ts",
+      "specialCommands": ["down"],
       "code": "  if (n <= 1) return n;\n  return fibonacci(n - 1) + fibonacci(n - 2);"
     },
     {
       "id": 6,
-      "script": "This is a recursive implementation of the Fibonacci sequence. If 'n' is 0 or 1, we return 'n'; otherwise, we recursively call the Fibonacci function for 'n-1' and 'n-2' and sum them up.",
+      "script": "This is a recursive implementation of the Fibonacci sequence. If 'n' is '0' or '1', we return 'n'. Otherwise, we recursively call the Fibonacci function for n minus 1 and n minus 2, then add them together.",
       "action": "talk-only"
     },
     {
       "id": 7,
-      "script": "Let's refactor our code to make it more readable. We'll use memoization to optimize the performance of our Fibonacci function.",
-      "action": "highlight-code",
+      "script": "Now, this function would work, but it's not very performant. We can use memoization to optimize the performance of our Fibonacci function.",
+      "scriptStart": "before",
+      "action": "edit",
       "filename": "fibonacci.ts",
+      "specialCommands": ["delete-line", "up", "delete-line", "left", "enter"],
       "code": "  const memo: Record<number, number> = {};\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return memo[n] = fibonacci(n - 1) + fibonacci(n - 2);"
     },
     {
@@ -50,7 +59,7 @@
     },
     {
       "id": 9,
-      "script": "Great! We've successfully created a Fibonacci calculation function in TypeScript using a recursive approach with memoization.",
+      "script": "Great! We've successfully created a Fibonacci calculation function in TypeScript using a recursive approach with memoization. Until next time - cheers!",
       "action": "talk-only"
     }
   ]

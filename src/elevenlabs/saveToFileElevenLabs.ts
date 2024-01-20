@@ -22,8 +22,6 @@ export const saveToFileElevenLabs = async (step: IStep, audioFolderPath: string,
     return;
   }
 
-  console.log('getting voice data...');
-
   // headers for elevenlabs
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -36,7 +34,7 @@ export const saveToFileElevenLabs = async (step: IStep, audioFolderPath: string,
     model_id: 'eleven_turbo_v2',
     voice_settings: {
       stability: 0.5,
-      similarity_boost: 1,
+      similarity_boost: 0.95,
     },
   };
 

@@ -1,3 +1,4 @@
+import { edit } from "./actions/edit";
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
 import { addAudioToVideo } from "./audio/addAudioToVideo";
@@ -7,11 +8,14 @@ import { editAppendFile } from "./actions/editAppendFile";
 import { convertScriptPropertiesToAudio } from "./audio/convertScriptPropertiesToAudio";
 import { buildAudioFile } from "./audio/buildAudioFile";
 import { loadSteps } from "./io/loadSteps";
+import { editOnPrevLine } from "./actions/editAddOnPrevLine";
+import { editReplace } from "./actions/editReplace";
+import { IStep } from "./interfaces/IStep";
 const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
 
 let trueAudioStartTime = 0;
 
-const {steps, stepsFilePath} = loadSteps();
+const { steps, stepsFilePath } = loadSteps();
 
 // file path prefix is the current working directory
 const filePathPrefix = process.cwd();
@@ -48,33 +52,32 @@ const playAudioInPuppeteer = async (
   // Add the script tag to the page
   await page.addScriptTag({ content: scriptContent });
 
+  // add the start time to the array
+  const startTime = Math.round(performance.now()) - trueAudioStartTime;
+  console.log(`audio ${id} start time set to: ${startTime}`);
+  audioStartTimes.push(startTime);
+
   // Wait for the audio playback to complete
   await page.waitForFunction(
     () => (window as any).audioPlaybackPromiseResolved === true
   );
 };
 
-const executeStep = async (page: Page, step: any) => {
+const executeStepAction = async (page: Page, step: IStep) => {
   switch (step.action) {
     case "create":
       await createFile(page, step.id, step.filename, step.script);
       break;
-    case "edit-append":
-      await editAppendFile(
+    case "edit":
+      // no coding stuff to do here
+      await edit(
         page,
         step.id,
         step.filename,
         step.script,
-        step.code
-      );
-      break;
-    case "edit-add-on-new-line":
-      await editAddOnNewLine(
-        page,
-        step.id,
-        step.filename,
-        step.script,
-        step.code
+        step.code,
+        step.oldCode,
+        step.specialCommands
       );
       break;
     case "talk-only":
@@ -83,16 +86,38 @@ const executeStep = async (page: Page, step: any) => {
     default:
       console.error(`Unsupported action: ${step.action}`);
   }
-  // even though we have no way of recording the audio, it spaces the steps properly for when
-  // we add the audio back in later
-  // Record the start time and round it
-  const startTime = Math.round(performance.now()) - trueAudioStartTime;
-  audioStartTimes.push(startTime);
+};
+
+const playAudioLogic = async (page: Page, step: IStep) => {
+  // Play the audio in puppeteer to simulate what will happen in final video
   await playAudioInPuppeteer(
     page,
     step.id,
     `${audioFolderPath}/${step.id}.mp3`
   );
+};
+
+const executeStep = async (page: Page, step: IStep) => {
+  // script reading before code is the default
+  if (step.scriptStart === "before" || step.scriptStart === undefined) {
+    await playAudioLogic(page, step);
+    await executeStepAction(page, step);
+    return;
+  }
+
+  if (step.scriptStart === "after") {
+    await executeStepAction(page, step);
+    await playAudioLogic(page, step);
+    return;
+  }
+
+  if (step.scriptStart === "during") {
+    // Wait for both the step execution and audio playback to complete
+    await Promise.all([
+      playAudioLogic(page, step),
+      executeStepAction(page, step),
+    ]);
+  }
 };
 
 const runPuppeteerAutomation = async () => {
@@ -116,16 +141,19 @@ const runPuppeteerAutomation = async () => {
     height: 1080,
   });
 
-  // create and start the record
-  const recorder = new PuppeteerScreenRecorder(page);
-  await recorder.start(videoFile);
-
   // Wait for the Monaco Editor to load
   await page.waitForFunction(() => (window as any).monaco !== undefined);
+
+  // create and start the recording
+  const recorder = new PuppeteerScreenRecorder(page);
+  await recorder.start(videoFile);
 
   // before beginning steps, save what current time we are in execution of this program
   // needed for accurately calculating the audio start times
   trueAudioStartTime = Math.round(performance.now());
+
+  // add a 2 second delay before starting the steps
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   // Automation commands based on steps
   for (const step of steps) {
@@ -134,6 +162,10 @@ const runPuppeteerAutomation = async () => {
     console.log(`Step ${step.id} complete`);
   }
 
+  // wait 10 more seconds for any audio to finish playing
+  await new Promise((resolve) => setTimeout(resolve, 10000));
+
+  // stop the recording
   await recorder.stop();
 
   // Close the browser
@@ -159,8 +191,6 @@ const main = async () => {
 
     // then combine the audio and video files
     await addAudioToVideo(videoFile, audioFolderPath);
-
-    
   } catch (error) {
     console.error("MAIN ERROR:", error);
   }

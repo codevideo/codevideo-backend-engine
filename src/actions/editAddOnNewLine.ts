@@ -9,12 +9,20 @@ export const editAddOnNewLine = async (
 ) => {
   await page.evaluate(
     async (id, filename, script, code) => {
-      const editor = (window as any).monaco.editor.getModels()[0];
+      const editor = (window as any).editor;
+      
+      // Scroll to the end (bottom) of the document
+      const lastLine = editor.getLineCount();
+      editor.revealLine(lastLine);
+
+      // Wait for a short period to ensure that the scroll has completed
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // add a new line at the end
       const currentValue = editor.getValue();
-      // add a new line
       editor.setValue(currentValue + "\n");
 
-      // now loop over code characters with slight delay - appending to whatever is currently in the editor
+      // now loop over code characters with a slight delay - appending to whatever is currently in the editor
       for (const character of code) {
         const currentValue = editor.getValue();
         editor.setValue(currentValue + character);

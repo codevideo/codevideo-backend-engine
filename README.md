@@ -1,6 +1,6 @@
-# monaco editor automation api
+# Zoinkr
 
-Automate software courses with the monaco editor!
+Create beautifully realistic automated software videos with the monaco editor!
 
 ## Installation
 
@@ -68,14 +68,49 @@ Miscellaneous actions:
 ## Run examples
 
 Writing a simple hello world console.log statement:
+
 ```bash
-npm run start -- ../examples/hello-world.json
+npm run start ./examples/hello-world.json
 ```
 
 Writing a sum TypeScript function:
 
 ```bash
-npm run start -- ../examples/sum.json
+npm run start ./examples/sum.json
 ```
 
 With all the examples, you should end up with an mp4 file in the `./video` directory, and an audio file in the `./audio` directory.
+
+## Other Commands
+
+### `clean`
+
+This command cleans out the `./dist`, `./audio`, and `./video` directories. Be careful! If there was a lot of data, you'll have to regenerate everything again for each video made. This could get expensive if you are doing a lot of text to speech.
+
+```bash
+npm run clean
+```
+
+### `make-video`
+Just an alias for `start`;
+
+```bash
+npm run make-video
+```
+
+### `scripts-health-check`
+
+It sometimes happens that the text to speech model produces artifacts in the audio. This command will run a health check on all audio files produced by a step file by transcripting them and comparing their transcript to the original transcript using Levenshtein distance. If the transcripts are different, it will print out the file name and the transcript, and attempt to create a new audio file.
+
+```bash
+npm run scripts-health-check ./examples/hello-world.json
+```
+
+
+### `scripts-character-count`
+
+As is always the case with character or word based cost models, the amount of text that will be converted is always a question. This script prints out the character, word, and page count of all scripts in a given step file.
+
+```bash
+npm run scripts-character-count ./examples/hello-world.json
+```

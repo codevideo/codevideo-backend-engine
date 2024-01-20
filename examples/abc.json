@@ -15,7 +15,7 @@
   },
   {
     "id": 3,
-    "script": "Let's make yet another variable, 'c', equal to a plus b.",
+    "script": "Let's make yet another variable, 'c' equal to variable 'a', plus variable 'b'.",
     "action": "edit-add-on-new-line",
     "filename": "index.js",
     "code": "var c = a + b"
@@ -29,7 +29,9 @@
   },
   {
     "id": 5,
-    "script": "I'd have full video exports by now but ffmpeg is being a total piece of shit. They WISH they could build something like this, but instead they'd like to fucking tinker around with their garbage syntax.",
-    "action": "talk-only"
+    "script": "I'd have full video exports by now but FF mpeg is being a total piece of shit. They WISH they could build something like this, but instead they'd like to fucking tinker around with their garbage syntax.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "// FUCK YOU FFMPEG!!!"
   }  
 ]

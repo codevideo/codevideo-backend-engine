@@ -23,20 +23,23 @@
         function loadMonaco() {
             require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.27.0/min/vs' }});
             require(['vs/editor/editor.main'], function () {
-                // Create the editor
-                var editor = monaco.editor.create(document.getElementById('editor'), {
+                // Create the editor and attach it to the window object
+                window.editor = monaco.editor.create(document.getElementById('editor'), {
                     value: [
                         ""
                     ].join('\n'),
-                    language: 'javascript',
+                    language: 'typescript',
                     theme: 'vs-dark',
-                    fontSize: 18,
+                    fontSize: 20,
                 });
 
                 // Handle editor resize on window resize
                 window.addEventListener('resize', function () {
-                    editor.layout();
+                    window.editor.layout();
                 });
+
+                // click once in the editor so we get the caret showing
+                window.editor.focus();
             });
         }
     </script>
