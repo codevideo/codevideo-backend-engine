@@ -1,0 +1,37 @@
+[
+  {
+    "id": 0,
+    "script": "Hello! Welcome to a super super beginner tutorial on JavaScript.",
+    "action": "edit-append",
+    "filename": "index.js",
+    "code": "// Lesson 1 - Hello and welcome! Let's get started."
+  },
+  {
+    "id": 1,
+    "script": "First, probably one of the most important keywords in JavaScript is 'var'. Var is used to declare variables in JavaScript. Variables are simply programmatic items that hold on to the value we assign to them. We assign them values in a left to right fashion. Let's declare our first variable, calling it 'a', and assign it a value of 1.",
+    "action": "edit-append",
+    "filename": "index.js",
+    "code": "var a = 1"
+  },
+  {
+    "id": 2,
+    "script": "Now, we'll assign variable 'b' a value of 2.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "var b = 2"
+  },
+  {
+    "id": 3,
+    "script": "Let's make yet another variable, 'c', equal to the sum of a plus b.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "var c = a + b"
+  },
+  {
+    "id": 4,
+    "script": "Comments are also important in any programming language, and JavaScript is no exception. Comments can add helpful hints for developers who read the code, and are not executed by the program. You'll notice already I added a comment at the beginning of the lesson, but let's go back up a few lines and document what our code is doing.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "// Here's a comment"
+  }
+]

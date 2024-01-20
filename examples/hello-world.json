@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "script": "First we'll create a new file called index.js.",
+    "action": "create",
+    "filename": "index.js"
+  },
+  {
+    "id": 2,
+    "script": "To represent that it's 'index.js', I'll just put a comment here",
+    "action": "edit-append",
+    "filename": "index.js",
+    "code": "// index.js"
+  },
+  {
+    "id": 3,
+    "script": "Then, we'll add a simple console.log statement to the file. We'll learn in the coming lessons what the console is and how to use it.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "console.log(\"Hello, world!\");"
+  },
+  {
+    "id": 4,
+    "script": "For example, if I wanted to write the value of some variable, I could do that with console.log.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "var myVariable = \"Important variable I want to keep track of\";\nconsole.log(myVariable);"
+  }
+]

@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "script": "First, we'll assign variable 'a' a value of 1.",
+    "action": "edit-append",
+    "filename": "index.js",
+    "code": "var a = 1"
+  },
+  {
+    "id": 2,
+    "script": "Now, we'll assign variable 'b' a value of 2.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "var b = 2"
+  },
+  {
+    "id": 3,
+    "script": "Let's make yet another variable, 'c', equal to a plus b.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "var c = a + b"
+  },
+  {
+    "id": 4,
+    "script": "and just for good measure, here's a comment.",
+    "action": "edit-add-on-new-line",
+    "filename": "index.js",
+    "code": "// comment"
+  },
+  {
+    "id": 5,
+    "script": "I'd have full video exports by now but ffmpeg is being a total piece of shit. They WISH they could build something like this, but instead they'd like to fucking tinker around with their garbage syntax.",
+    "action": "talk-only"
+  }  
+]

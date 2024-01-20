@@ -1,0 +1,57 @@
+[
+    {
+      "id": 1,
+      "script": "In this tutorial, we'll walk through the creation of a Fibonacci calculation function in TypeScript.",
+      "action": "talk-only"
+    },
+    {
+      "id": 2,
+      "script": "Let's begin by creating a new file named 'fibonacci.ts'.",
+      "action": "create",
+      "filename": "fibonacci.ts"
+    },
+    {
+      "id": 3,
+      "script": "Now, let's define the function signature. We want our function to calculate the nth Fibonacci number, so our function will take a single parameter, 'n', which represents the position in the Fibonacci sequence.",
+      "action": "edit-append",
+      "filename": "fibonacci.ts",
+      "code": "const fibonacci = (n: number) => {}"
+    },
+    {
+      "id": 4,
+      "script": "To help others understand our code, let's add a brief JSDoc comment explaining the purpose of the function and the meaning of the 'n' parameter.",
+      "action": "edit-add-on-prev-line",
+      "filename": "fibonacci.ts",
+      "code": "/**\n * Calculates the nth Fibonacci number.\n * @param n The position in the Fibonacci sequence.\n */"
+    },
+    {
+      "id": 5,
+      "script": "Now, let's implement the Fibonacci logic inside our function.",
+      "action": "edit-append",
+      "filename": "fibonacci.ts",
+      "code": "  if (n <= 1) return n;\n  return fibonacci(n - 1) + fibonacci(n - 2);"
+    },
+    {
+      "id": 6,
+      "script": "This is a recursive implementation of the Fibonacci sequence. If 'n' is 0 or 1, we return 'n'; otherwise, we recursively call the Fibonacci function for 'n-1' and 'n-2' and sum them up.",
+      "action": "talk-only"
+    },
+    {
+      "id": 7,
+      "script": "Let's refactor our code to make it more readable. We'll use memoization to optimize the performance of our Fibonacci function.",
+      "action": "highlight-code",
+      "filename": "fibonacci.ts",
+      "code": "  const memo: Record<number, number> = {};\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return memo[n] = fibonacci(n - 1) + fibonacci(n - 2);"
+    },
+    {
+      "id": 8,
+      "script": "Here, we've introduced a 'memo' object to store previously calculated Fibonacci values. This reduces redundant calculations and improves the efficiency of our function.",
+      "action": "talk-only"
+    },
+    {
+      "id": 9,
+      "script": "Great! We've successfully created a Fibonacci calculation function in TypeScript using a recursive approach with memoization.",
+      "action": "talk-only"
+    }
+  ]
+  

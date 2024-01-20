@@ -1,0 +1,31 @@
+{
+  "name": "@fullstackcraftllc/monaco-editor-automation-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node ./dist/index.js",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf ./dist/* && rm -rf ./audio/* && rm -rf ./video/*",
+    "make-video": "npm run build && node ./dist/index.js",
+    "scripts-char-count": "npm run build && node ./dist/scripts-char-count.js",
+    "scripts-health-check": "npm run build && node ./dist/scripts-health-check.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.2",
+    "isomorphic-fetch": "^3.0.0",
+    "openai": "^4.24.7",
+    "puppeteer": "^21.7.0",
+    "puppeteer-screen-recorder": "^2.1.2",
+    "say": "^0.16.0"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/isomorphic-fetch": "^0.0.39",
+    "typescript": "^5.3.3"
+  }
+}

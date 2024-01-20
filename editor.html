@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Editor Full Screen</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #editor {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+    <!-- Include the Monaco Editor loader script -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.27.0/min/vs/loader.js"></script>
+    <script>
+        // Function to load Monaco Editor
+        function loadMonaco() {
+            require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.27.0/min/vs' }});
+            require(['vs/editor/editor.main'], function () {
+                // Create the editor
+                var editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: [
+                        ""
+                    ].join('\n'),
+                    language: 'javascript',
+                    theme: 'vs-dark',
+                    fontSize: 18,
+                });
+
+                // Handle editor resize on window resize
+                window.addEventListener('resize', function () {
+                    editor.layout();
+                });
+            });
+        }
+    </script>
+</head>
+<body onload="loadMonaco()">
+    <div id="editor"></div>
+</body>
+</html>
