@@ -1,0 +1,51 @@
+[
+    {
+      "id": 1,
+      "script": "Welcome back! In this tutorial, we'll explore the creation of a generic binary search function in TypeScript.",
+      "action": "talk-only"
+    },
+    {
+      "id": 2,
+      "script": "Let's start by creating a new file named 'binarySearch.ts'.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "binarySearch.ts",
+      "code": "// binarySearch.ts\n"
+    },
+    {
+      "id": 3,
+      "script": "Now, let's define the function signature. Our binary search function will take two parameters: an array 'arr' of a generic type 'T' and a target element 'target' of the same generic type. It will return the index of the target element if found, otherwise -1.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "binarySearch.ts",
+      "code": "const binarySearch = <T>(arr: T[], target: T): number => {\n\n}"
+    },
+    {
+      "id": 4,
+      "script": "Let's add a comment to explain the purpose of our function and the meaning of the parameters.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "binarySearch.ts",
+      "specialCommands": ["up", "up"],
+      "code": "/**\n * Performs a binary search on a sorted array.\n * @param arr The sorted array to search.\n * @param target The element to find.\n * @returns The index of the target element, or -1 if not found.\n */\n"
+    },
+    {
+      "id": 5,
+      "script": "Now, let's implement the binary search logic inside our function.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "binarySearch.ts",
+      "specialCommands": ["down"],
+      "code": "  let left = 0;\n  let right = arr.length - 1;\n\n  while (left <= right) {\n    const mid = Math.floor((left + right) / 2);\n    const midElement = arr[mid];\n\n    if (midElement === target) return mid;\n    if (midElement < target) left = mid + 1;\n    else right = mid - 1;\n  }\n\n  return -1;"
+    },
+    {
+      "id": 6,
+      "script": "This is a generic binary search algorithm. It assumes that the input array is sorted, and it efficiently narrows down the search space until the target element is found or the search space is empty.",
+      "action": "talk-only"
+    },
+    {
+      "id": 7,
+      "script": "Congratulations! You've now created a generic binary search function in TypeScript. Feel free to reuse this function whenever you need to efficiently search through a sorted array. Well done!",
+      "action": "talk-only"
+    }
+  ]

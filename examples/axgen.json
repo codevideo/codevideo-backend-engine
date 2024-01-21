@@ -1,0 +1,74 @@
+[
+    {
+      "id": 1,
+      "script": "The Axgen library is used to connect your data to large language models. This framework simplifies the process of ingesting, structuring, and querying your data using vector databases and large language models (LLMs).",
+      "action": "talk-only"
+    },
+    {
+      "id": 2,
+      "script": "First, let's create a new file named 'axgenUsage.ts'.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "code": "// axgenUsage.ts\n"
+    },
+    {
+      "id": 3,
+      "script": "Next, let's import the necessary modules from the 'axgen' library.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "specialCommands": ["down"],
+      "code": "import {\n  Ingestion,\n  Pinecone,\n  FileSystem,\n  MarkdownSplitter,\n  OpenAIEmbedder,\n  RAG,\n  Retriever,\n  PromptWithContext,\n  OpenAICompletion,\n} from 'axgen';\n\nconst { OPENAI_API_KEY, PINECONE_API_KEY } = process.env;\n"
+    },
+    {
+      "id": 4,
+      "script": "Now, let's create instances of the OpenAIEmbedder and Pinecone classes.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "specialCommands": ["down", "down"],
+      "code": "// Create instances\nconst embedder = new OpenAIEmbedder({ apiKey: OPENAI_API_KEY });\nconst pinecone = new Pinecone({\n  index: 'mdindex',\n  namespace: 'default',\n  environment: 'us-west1-gcp-free',\n  apiKey: PINECONE_API_KEY,\n});\n"
+    },
+    {
+      "id": 5,
+      "script": "Now, let's perform ingestion on local Markdown files using the Ingestion class.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "specialCommands": ["down", "down"],
+      "code": "// Ingest local markdown files\nawait new Ingestion({\n  store: pinecone,\n  source: new FileSystem({ path: '../path/to/sales/data', glob: '**/*.md' }),\n  splitter: new MarkdownSplitter({ chunkSize: 1000 }),\n  embedder: embedder,\n}).run();\n"
+    },
+    {
+      "id": 6,
+      "script": "Now, let's set up Retrieval Augmented Generation (RAG) for querying data.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "specialCommands": ["down", "down"],
+      "code": "// Set up Retrieval Augmented Generation (RAG)\nconst template = `Context information is below.\n---------------------\n{context}\n---------------------\nGiven the context information and not prior knowledge, answer the question: {query}\n`;\n\nconst rag = new RAG({\n  embedder: embedder,\n  model: new OpenAICompletion({\n    model: 'text-davinci-003',\n    max_tokens: 256,\n    apiKey: OPENAI_API_KEY,\n  }),\n  prompt: new PromptWithContext({ template }),\n  retriever: new Retriever({ store: pinecone, topK: 3 }),\n});\n"
+    },
+    {
+      "id": 7,
+      "script": "Now, let's use RAG to query your data and stream the response.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "specialCommands": ["down", "down"],
+      "code": "// Stream the response\nconst { result, info } = rag.stream(\n  'What were our biggest sales in Q4 of this year and who were the customers?'\n);\n\nfor await (const chunk of result) {\n  process.stdout.write(chunk);\n}\n\nprocess.stdout.write('\\n');\n"
+    },
+    {
+      "id": 8,
+      "script": "Finally, let's display information about the results used from the vector database.",
+      "scriptStart": "before",
+      "action": "edit",
+      "filename": "axgenUsage.ts",
+      "specialCommands": ["down", "down"],
+      "code": "// Display information about results\nconsole.log(info);\n"
+    },
+    {
+      "id": 9,
+      "script": "Fantastic! You've successfully utilized the Axgen library to connect your data to large language models. This enables efficient data ingestion, structuring, and querying using vector databases and LLMs. Well done!",
+      "action": "talk-only"
+    }
+  ]

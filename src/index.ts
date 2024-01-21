@@ -162,8 +162,8 @@ const runPuppeteerAutomation = async () => {
     console.log(`Step ${step.id} complete`);
   }
 
-  // wait 10 more seconds for any audio to finish playing
-  await new Promise((resolve) => setTimeout(resolve, 10000));
+  // wait 15 more seconds for any audio to finish playing
+  await new Promise((resolve) => setTimeout(resolve, 15000));
 
   // stop the recording
   await recorder.stop();
