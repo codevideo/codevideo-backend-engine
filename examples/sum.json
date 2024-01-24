@@ -6,41 +6,36 @@
   },
   {
     "id": 2,
-    "script": "We'll start by creating a new file called 'sum.ts'.",
-    "action": "create",
-    "filename": "sum.ts"
+    "script": "Let's start with the signature of the function.",
+    "action": "edit",
+    "filename": "sum.ts",
+    "code": "const sum = (a: number, b: number) => {\n\n}"
   },
   {
     "id": 3,
-    "script": "Then, we'll create the signature of the function.",
-    "action": "edit-append",
-    "filename": "sum.ts",
-    "code": "const sum = (a: number, b: number) => {}"
-  },
-  {
-    "id": 4,
     "script": "We probably should add a short js doc comment to the function.",
-    "action": "edit-add-on-prev-line",
+    "action": "edit",
     "filename": "sum.ts",
+    "specialCommands": ["up", "up"],
     "code": "/**\n * Adds two numbers together.\n * @param a The first number to add.\n * @param b The second number to add.\n */"
   },
   {
-    "id": 5,
+    "id": 4,
     "script": "Finally, we'll add the body of the function. For such a simple function, not much more discussion is needed, we just use the built in + function to return the sum of a and b.",
-    "action": "old-code-to-new-code",
+    "action": "edit",
     "filename": "sum.ts",
-    "oldCode": "const sum = (a: number, b: number) => {}",
-    "code": "const sum = (a: number, b: number) => {\n  return a + b;\n};"
+    "specialCommands": ["down"],
+    "code": "  return a + b;"
   },
   {
-    "id": 6,
+    "id": 5,
     "script": "However, there is a small refactoring we can make. Since we're using an arrow function and have a single line which is our return statement, we can remove the curly braces and return keyword.",
     "action": "highlight-code",
     "filename": "sum.ts",
     "code": "{\n  return a + b;\n};"
   },
   {
-    "id": 7,
+    "id": 6,
     "script": "Let's do the actual refactoring now.",
     "action": "edit-replace",
     "filename": "sum.ts",
@@ -48,12 +43,12 @@
     "code": "a + b;"
   },
   {
-    "id": 8,
+    "id": 7,
     "script": "This is called an implicit return. It's a nice way to make code shorter and more readable for simple functions.",
     "action": "talk-only"
   },
   {
-    "id": 9,
+    "id": 8,
     "script": "And that's it! We've created a simple sum function in typescript.",
     "action": "talk-only"
   }

@@ -1,50 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monaco Editor Full Screen</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
 
-        #editor {
-            width: 100%;
-            height: 100vh;
-        }
+      #editor {
+        width: 100%;
+        height: 100vh;
+      }
     </style>
     <!-- Include the Monaco Editor loader script -->
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.27.0/min/vs/loader.js"></script>
     <script>
-        // Function to load Monaco Editor
-        function loadMonaco() {
-            require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.27.0/min/vs' }});
-            require(['vs/editor/editor.main'], function () {
-                // Create the editor and attach it to the window object
-                window.editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: [
-                        ""
-                    ].join('\n'),
-                    language: 'typescript',
-                    theme: 'vs-dark',
-                    fontSize: 20,
-                });
-
-                // Handle editor resize on window resize
-                window.addEventListener('resize', function () {
-                    window.editor.layout();
-                });
-
-                // click once in the editor so we get the caret showing
-                window.editor.focus();
-            });
+      // Function to load Monaco Editor
+      function loadMonaco() {
+        // Function to get query parameters from the URL
+        function getQueryParam(name) {
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get(name);
         }
+
+        // Check if the "initialCode" query parameter is present
+        const initialCodeParam = getQueryParam("initialCode");
+
+        require.config({
+          paths: {
+            vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.27.0/min/vs",
+          },
+        });
+        require(["vs/editor/editor.main"], function () {
+          // Create the editor and attach it to the window object
+          window.editor = monaco.editor.create(
+            document.getElementById("editor"),
+            {
+              value: [initialCodeParam || ""].join("\n"),
+              language: "typescript",
+              theme: "vs-dark",
+              fontSize: 20,
+            }
+          );
+
+          // Handle editor resize on window resize
+          window.addEventListener("resize", function () {
+            window.editor.layout();
+          });
+
+          // click once in the editor so we get the caret showing
+          window.editor.focus();
+        });
+      }
     </script>
-</head>
-<body onload="loadMonaco()">
+  </head>
+  <body onload="loadMonaco()">
     <div id="editor"></div>
-</body>
+  </body>
 </html>

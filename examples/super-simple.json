@@ -1,13 +1,13 @@
 [
   {
     "id": 1,
-    "action": "create",
+    "action": "edit",
     "filename": "index.js",
     "script": "To showcase how this tool works, we'll do a simple hello world example."
   },
   {
     "id": 2,
-    "action": "edit-append",
+    "action": "edit",
     "filename": "index.js",
     "code": "console.log('Hello World!');",
     "script": "Nice, that looks pretty good! Pretty cool tool, right?!"

@@ -1,0 +1,9 @@
+[
+    {
+      "id": 1,
+      "script": "Solve GmbH is a super cool company. And here is a JavaScript comment to prove it!",
+      "action": "edit",
+      "filename": "index.js",
+      "code": "// Solve is awesome!"
+    }
+]

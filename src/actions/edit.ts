@@ -3,15 +3,11 @@ import type monaco from "monaco-editor";
 
 export const edit = async (
   page: Page,
-  id: number,
-  filename: string,
-  script: string,
   code?: string,
-  oldCode?: string,
   specialCommands?: string[]
 ) => {
   await page.evaluate(
-    async (id, filename, script, code, oldCode, specialCommands) => {
+    async (code, specialCommands) => {
       const editor = (window as any).editor;
 
       // define the human typing here in the puppeteer environment
@@ -50,10 +46,44 @@ export const edit = async (
         });
       };
 
+      const highlightText = 
+      (editor: monaco.editor.IStandaloneCodeEditor,
+         searchText: string) => {
+        const model = editor.getModel();
+      
+        // Find the position of the searchText in the model
+            // @ts-ignore
+        const searchTextPosition = model.findNextMatch(searchText, new monaco.Position(1, 1));
+      
+        // If searchText is found
+        if (searchTextPosition) {
+          const line = searchTextPosition.range.startLineNumber;
+          const column = searchTextPosition.range.startColumn;
+      
+          // Move the cursor to the beginning of the searchText
+          editor.setPosition({ lineNumber: line, column });
+      
+          // Reveal the line in the center
+          editor.revealLineInCenter(line);
+      
+          // Calculate the range of the searchText
+          const searchTextLength = searchText.length;
+            // @ts-ignore
+          const range = new monaco.Range(line, column, line, column + searchTextLength);
+      
+          // Set the selection to highlight the searchText
+          editor.setSelection(range);
+      
+          // Reveal the range in the center
+          editor.revealRangeInCenter(range);
+        }
+      }
+
       // also define an 'executeMoveCommand' function here in the puppeteer environment
-      const executeMoveCommand = async (
+      const executeSpecialCommand = async (
         editor: monaco.editor.IStandaloneCodeEditor,
-        command: string
+        command: string,
+        code: string
       ) => {
         let pos: any = editor.getPosition();
         if (!pos) {
@@ -89,6 +119,9 @@ export const edit = async (
             break;
           default:
             break;
+          case "highligh-text":
+            highlightText(editor, code)
+            break;
         }
 
         editor.setPosition(pos);
@@ -98,7 +131,7 @@ export const edit = async (
       // before coding, conduct any moves that are needed
       if (specialCommands) {
         for (const moveCommand of specialCommands) {
-          await executeMoveCommand(editor, moveCommand);
+          await executeSpecialCommand(editor, moveCommand, code || "");
         }
       }
 
@@ -107,11 +140,7 @@ export const edit = async (
         await simulateHumanTyping(editor, code);
       }
     },
-    id,
-    filename,
-    script,
     code,
-    oldCode,
     specialCommands
   );
 };

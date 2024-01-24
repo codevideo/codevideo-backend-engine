@@ -65,18 +65,11 @@ const playAudioInPuppeteer = async (
 
 const executeStepAction = async (page: Page, step: IStep) => {
   switch (step.action) {
-    case "create":
-      await createFile(page, step.id, step.filename, step.script);
-      break;
     case "edit":
       // no coding stuff to do here
       await edit(
         page,
-        step.id,
-        step.filename,
-        step.script,
         step.code,
-        step.oldCode,
         step.specialCommands
       );
       break;
