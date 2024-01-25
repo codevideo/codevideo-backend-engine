@@ -1,6 +1,7 @@
 import fs from 'fs';
 import fetch from 'isomorphic-fetch';
 import { IStep } from '../interfaces/IStep';
+import { IAction } from '../interfaces/IAction';
 
 interface VoiceSettings {
   stability: number;
@@ -13,12 +14,12 @@ interface TextToSpeechRequest {
   voice_settings: VoiceSettings;
 }
 
-export const saveToFileElevenLabs = async (step: IStep, audioFolderPath: string, forceOverwrite: boolean) => {
+export const saveToFileElevenLabs = async (id: number, textToSpeak: string, audioFolderPath: string, forceOverwrite: boolean) => {
 
   // if the file exists already, don't do anything - save money :)
-  const filePath = `${audioFolderPath}/${step.id}.mp3`;
+  const filePath = `${audioFolderPath}/${id}.mp3`;
   if (fs.existsSync(filePath) && !forceOverwrite) {
-    console.log(`File for step ${step.id} already exists. Skipping...`);
+    console.log(`File for step ${id} already exists. Skipping...`);
     return;
   }
 
@@ -30,7 +31,7 @@ export const saveToFileElevenLabs = async (step: IStep, audioFolderPath: string,
   };
 
   const body: TextToSpeechRequest = {
-    text: step.script,
+    text: textToSpeak,
     model_id: 'eleven_turbo_v2',
     voice_settings: {
       stability: 0.5,
@@ -59,7 +60,7 @@ export const saveToFileElevenLabs = async (step: IStep, audioFolderPath: string,
 
     // write the byte data to an mp3 file
     const buffer = await response.arrayBuffer();
-    const filePath = `${audioFolderPath}/${step.id}.mp3`;
+    const filePath = `${audioFolderPath}/${id}.mp3`;
 
     // write the file with fs
     fs.writeFileSync(filePath, Buffer.from(buffer));

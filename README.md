@@ -10,30 +10,80 @@ npm install
 
 ## Step Files
 
-The automation api works via a _step_ file. This is a json file that contains a list of _steps_ to perform on a file. An example of a simple hello world automation looks like this:
+The automation api works via an array of actions. These actions are defined in a actions file. The actions file is a json file that contains an array of actions. Each action has a `type` and `data` property. The `type` property is the type of action to perform, and the `data` property is the data to use for the action.
 
 ```json
 [
   {
-    "id": 2,
-    "script": "To represent that this file is 'index.js', I'll just put a comment here.",
-    "action": "edit",
-    "filename": "index.js",
-    "code": "// index.js"
+    "name": "speak-before",
+    "value": "Let's make a simple 'hello world' program in typescript!"
   },
   {
-    "id": 3,
-    "script": "Then, we'll add a simple console.log statement to the file. We'll learn in the coming lessons what the console is and how to use it.",
-    "action": "edit",
-    "filename": "index.js",
-    "code": "console.log(\"Hello, world!\");"
+    "name": "type",
+    "value": "// hello-world.ts"
   },
   {
-    "id": 4,
-    "script": "For example, if I wanted to write the value of some variable, I could do that with console.log.",
-    "action": "edit",
-    "filename": "index.js",
-    "code": "var myVariable = \"Important variable I want to keep track of\";\nconsole.log(myVariable);"
+    "name": "speak-before",
+    "value": "That's just a comment, but let's actually make a console.log statement."
+  },
+  {
+    "name": "key-down",
+    "value": "1"
+  },
+  {
+    "name": "type",
+    "value": "console.log('hello world');"
+  }
+]
+```
+
+Alternatively, you can define the actions directly in TypeScript. This is useful if you want to use the editor's intellisense to help you write the actions.
+
+```ts
+export const sumActions: Array<IAction> = [
+  {
+    name: 'speak-before',
+    value: 'Let\'s make a simple sum function in typescript!'
+  },
+  {
+    name: 'type',
+    value: '// sum.ts'
+  },
+  {
+    name: 'speak-before',
+    value: 'That\'s just a comment, but let\'s actually make a sum function.'
+  },
+  {
+    name: 'key-down',
+    value: '1'
+  },
+  {
+    name: 'type',
+    value: 'function sum(a: number, b: number): number {'
+  },
+  {
+    name: 'key-down',
+    value: '1'
+  },
+  {
+    name: 'type',
+    value: 'return a + b;'
+  },
+  {
+    name: 'key-down',
+    value: '1'
+  },
+  {
+    name: 'type',
+    value: '}'
+  },
+  {
+    name: 'key-down',
+    value: '1'
+  },
+  {
+    name: 'type',
+    value: 'console.log(sum(1, 2));'
   }
 ]
 ```
@@ -42,7 +92,7 @@ The automation api works via a _step_ file. This is a json file that contains a 
 
 ### Single File Environment
 
-In a single file environment, all actions should be able to be preformed with `edit` and `talk-only`.
+In a single file environment, there are a variety of actions.
 
 ### GitHub Codespaces Environment
 

@@ -1,83 +1,106 @@
 [
   {
-    "id": 1,
-    "script": "We'll finally start scaffolding our app. We'll start by creating a new Go app in a folder named 'allergycron'.",
-    "action": "execute-terminal-command",
+    "name": "speak-before",
+    "value": "We're going to scaffold a simple go cron job app for our allergy air quality checker. We'll start by creating a new Go app in a folder named 'allergycron'."
+  },
+  {
+    "name": "type-terminal",
     "value": "mkdir allergycron"
   },
   {
-    "id": 2,
-    "script": "Now, let's move into the 'allergycron' folder.",
-    "action": "execute-terminal-command",
+    "name": "enter",
+    "value": "1"
+  },
+  {
+    "name": "speak-before",
+    "value": "Now, let's move into the 'allergycron' folder."
+  },
+  {
+    "name": "type-terminal",
     "value": "cd allergycron"
   },
   {
-    "id": 3,
-    "script": "Let's initialize our module with 'go mod init'.",
-    "scriptStart": "before",
-    "action": "execute-terminal-command",
+    "name": "enter",
+    "value": "1"
+  },
+  {
+    "name": "speak-before",
+    "value": "Let's initialize our module with 'go mod init allergycron'."
+  },
+  {
+    "name": "type-terminal",
     "value": "go mod init allergycron"
   },
   {
-    "id": 4,
-    "script": "Let's take a look at the 'go.mod' file. Since we ran 'go mod init allergycron', it's been populated with the following contents:",
-    "scriptStart": "before",
-    "action": "open-file",
-    "filename": "go.mod"
+    "name": "enter",
+    "value": "1"
   },
   {
-    "id": 5,
-    "script": "Now we'll create the main.go file.",
-    "action": "execute-terminal-command",
+    "name": "speak-before",
+    "value": "Let's take a look at the 'go.mod' file. Since we've already ran 'go mod init allergycron', it's been populated with the following contents:"
+  },
+  {
+    "name": "type-terminal",
+    "value": "code go.mod"
+  },
+  {
+    "name": "speak-before",
+    "value": "This file manages dependencies and versioning for our project. It specifies the module name ('allergycron') and Go version (1.20.1, as of when this course was published)."
+  },
+  {
+    "name": "speak-before",
+    "value": "Now we'll create the main.go file."
+  },
+  {
+    "name": "type-terminal",
     "value": "touch main.go"
   },
   {
-    "id": 4,
-    "script": "This file manages dependencies and versioning for our project. It specifies the module name ('allergycron') and Go version (1.20.1, as of when this course was published).",
-    "action": "talk-only"
+    "name": "enter",
+    "value": "1"
   },
   {
-    "id": 6,
-    "script": "Next, let's open up the 'main.go' file.",
-    "scriptStart": "before",
-    "action": "terminal",
-    "filename": "terminal",
-    "code": "code main.go"
+    "name": "speak-before",
+    "value": "Next, let's open up the 'main.go' file."
   },
   {
-    "id": 7,
-    "script": "Great! Now, let's start building the cron job in 'main.go'.",
-    "action": "talk-only"
+    "name": "type-terminal",
+    "value": "code main.go"
   },
   {
-    "id": 8,
-    "script": "Add the following code to set up a cron job for Vienna time (CET) in 'main.go':",
-    "scriptStart": "before",
-    "action": "edit",
-    "filename": "main.go",
-    "code": "package main\n\nimport (\n\t\"time\"\n\n\t\"github.com/robfig/cron\"\n)\n\nfunc main() {\n\tloc, err := time.LoadLocation(\"Europe/Vienna\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\tcronJob := cron.NewWithLocation(loc)\n\tcronJob.AddFunc(\"0 0 8 * * *\", func() {\n\t\t// Your cron job logic here\n\t})\n\tcronJob.Start()\n\n\t// run forever AKA block the main thread\n\tselect {}\n}\n"
+    "name": "enter",
+    "value": "1"
   },
   {
-    "id": 9,
-    "script": "Notice that the cron job is set to run at 08:00:00 AM in Vienna time. This code uses the 'github.com/robfig/cron' library.",
-    "action": "talk-only"
+    "name": "speak-before",
+    "value": "Great! Now, let's start building the cron job in 'main.go'."
   },
   {
-    "id": 10,
-    "script": "Let's move on to building a generic HTTP utility function. First, create a new folder named 'utils' and add a file 'make_http_request.go' inside it.",
-    "action": "talk-only"
+    "name": "speak-before",
+    "value": "Add the following code to set up a cron job for Vienna time (CET) in 'main.go':"
   },
   {
-    "id": 11,
-    "script": "Add the following code to 'make_http_request.go':",
-    "scriptStart": "before",
-    "action": "edit",
-    "filename": "utils/make_http_request.go",
-    "code": "package utils\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"log\"\n\t\"net/http\"\n\t\"net/url\"\n\t\"strings\"\n)\n\n// Generic HTTP function to make any HTTP request\nfunc MakeHTTPRequest[T any](fullUrl string, httpMethod string, headers map[string]string, queryParameters url.Values, body io.Reader, responseType T) (T, error) {\n\t// Implementation of the generic HTTP function\n}\n"
+    "name": "edit",
+    "value": "package main\n\nimport (\n\t\"time\"\n\n\t\"github.com/robfig/cron\"\n)\n\nfunc main() {\n\tloc, err := time.LoadLocation(\"Europe/Vienna\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\tcronJob := cron.NewWithLocation(loc)\n\tcronJob.AddFunc(\"0 0 8 * * *\", func() {\n\t\t// Your cron job logic here\n\t})\n\tcronJob.Start()\n\n\t// run forever AKA block the main thread\n\tselect {}\n}\n"
   },
   {
-    "id": 12,
-    "script": "This generic HTTP function is flexible, reusable, and a staple in many Go codebases. You can find the detailed steps of building this function in the original article and video tutorial.",
-    "action": "talk-only"
+    "name": "speak-before",
+    "value": "Notice that the cron job is set to run at 8 AM in Vienna time. This code uses the 'github.com/robfig/cron' library, a popular Go library for running cron jobs."
+  },
+  {
+    "name": "speak-before",
+    "value": "Let's move on to building a generic HTTP utility function. First, create a new folder named 'utils' and add a file 'make_http_request.go' inside it."
+  },
+  {
+    "name": "speak-before",
+    "value": "Add the following code to 'make_http_request.go':"
+  },
+  {
+    "name": "edit",
+    "value": "package utils\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"log\"\n\t\"net/http\"\n\t\"net/url\"\n\t\"strings\"\n)\n\n// Generic HTTP function to make any HTTP request\nfunc MakeHTTPRequest[T any](fullUrl string, httpMethod string, headers map[string]string, queryParameters url.Values, body io.Reader, responseType T) (T, error) {\n\t// Implementation of the generic HTTP function\n}\n"
+  },
+  {
+    "name": "speak-before",
+    "value": "This generic HTTP function is flexible, reusable, and a staple in many of my Go codebases. You can find the detailed steps of building this function in the original article and video tutorial."
   }
 ]

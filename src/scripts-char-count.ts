@@ -1,17 +1,15 @@
-import { loadSteps } from "./io/loadSteps";
+import { SpeakAction } from "./interfaces/IAction";
+import { loadActions } from "./io/loadActions";
+import { convertActionsToSpeakActions } from "./type-guards/isSpeakAction";
 
 const scriptChartCount = () => {
   // load in the steps.json file
-  const { steps } = loadSteps();
+  const { actions } = loadActions('typescript');
 
-  // use reduce to count the characters in each 'script' property
-  const characterCount = steps.reduce(
-    (acc: any, step: { script: string | any[] }) => {
-      return acc + step.script.length;
-    },
-    0
-  );
+  const speakActions = convertActionsToSpeakActions(actions);
 
+  // use reduce to count the characters in the'value' property of each speak action
+  const characterCount = speakActions.map(a => a.value).reduce((a, b) => a + b.length, 0);
   const wordCount = Math.round(characterCount / 5);
   const pageCount = (wordCount / 500).toFixed(1);
 
