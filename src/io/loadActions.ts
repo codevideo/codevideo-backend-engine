@@ -2,6 +2,9 @@ import path from "path";
 import fs from "fs";
 import { IAction } from "../interfaces/IAction";
 import { sumActions } from "../examples/sum";
+import { fibonacciActions } from './../examples/fibonacci';
+import { enumExtensionsActions } from "../examples/enumExtensions";
+
 
 export const loadActions = (
   source: "json" | "typescript"
@@ -46,7 +49,9 @@ export const loadActions = (
     const loadedActions = require(actionsFilePath) as Array<IAction>;
     actions.push(...loadedActions);
   } else {
-    actions.push(...sumActions);
+    // actions.push(...sumActions);
+    // actions.push(...fibonacciActions);
+    actions.push(...enumExtensionsActions);
   }
 
   console.log(`Found ${actions.length} actions in file ${actionsFilePath}`);

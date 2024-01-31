@@ -6,6 +6,7 @@ import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAud
 import { buildAudioFile } from "./audio/buildAudioFile";
 import { sumActions } from "./examples/sum";
 import { loadActions } from "./io/loadActions";
+import { sha256Hash } from "./utils/sha256Hash";
 const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
 
 let trueAudioStartTime = 0;
@@ -27,15 +28,15 @@ const audioStartTimes: Array<number> = [];
 // TODO: would be nice to move in with executeAction, but the page makes a closure
 const playAudioInPuppeteer = async (
   page: Page,
-  id: number,
+  audioHash: string,
   filePath: string
 ) => {
   const scriptContent = `
     window.audioPlaybackPromiseResolved = false;
-    const audio${id} = new Audio('${filePath}');
-    const playPromise${id} = audio${id}.play();
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
 
-    audio${id}.addEventListener('ended', () => {
+    audio${audioHash}.addEventListener('ended', () => {
       window.audioPlaybackPromiseResolved = true;
     });
   `;
@@ -45,7 +46,7 @@ const playAudioInPuppeteer = async (
 
   // add the start time to the array
   const startTime = Math.round(performance.now()) - trueAudioStartTime;
-  console.log(`audio ${id} (${filePath}) start time set to: ${startTime}`);
+  console.log(`audio ${audioHash} (${filePath}) start time set to: ${startTime}`);
   audioStartTimes.push(startTime);
   // Wait for the audio playback to complete
   await page.waitForFunction(
@@ -95,11 +96,16 @@ const runPuppeteerAutomation = async (url: string) => {
     const action = actions[i];
     console.log(`Step ${id} action: ${action.name}`);
 
+    const audioHash = sha256Hash(action.value);
+
     // special case is audio playback
     if (action.name === "speak-before") {
-      await playAudioInPuppeteer(page, id, `${actionsAudioDirectory}/${id}.mp3`);
+      await playAudioInPuppeteer(page, audioHash, `${actionsAudioDirectory}/${audioHash}.mp3`);
       continue;
-    } else {
+    } else if (action.name === "type-terminal") {
+    
+  } else {
+
       await executeAction(page, id, action);
     }
 

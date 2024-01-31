@@ -99,20 +99,22 @@ export const executeAction = async (
         }
       };
 
-      let keyboardEvent: KeyboardEvent;
-      let times = parseInt(action.value);
+      // try to parse the 'times' value as an integer, if it fails, default to 1
+      // the times doesn't always apply to some actions, so we do that action just once
+      let times = parseInt(action.value) || 1;
       console.log("times", times);
-      // actual logic
-      switch (action.name) {
-        // case "speak-before":
-        //   await playAudioInPuppeteer(
-        //     id,
-        //     `./audio/${action.value}.mp3`
-        //   );
-        //   break;
-        case "arrow-down":
-          for (let i = 0; i < times; i++) {
-            let pos = editor.getPosition();
+      let pos;
+      for (let i = 0; i < times; i++) {
+        // actual logic
+        switch (action.name) {
+          // case "speak-before":
+          //   await playAudioInPuppeteer(
+          //     id,
+          //     `./audio/${action.value}.mp3`
+          //   );
+          //   break;
+          case "arrow-down":
+            pos = editor.getPosition();
             // @ts-ignore
             pos.lineNumber = pos.lineNumber + 1;
             console.log("moving pos to", pos);
@@ -120,11 +122,9 @@ export const executeAction = async (
             await new Promise((resolve) =>
               setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
             );
-          }
-          break;
-        case "arrow-up":
-          for (let i = 0; i < times; i++) {
-            let pos = editor.getPosition();
+            break;
+          case "arrow-up":
+            pos = editor.getPosition();
             // @ts-ignore
             pos.lineNumber = pos.lineNumber - 1;
             console.log("moving pos to", pos);
@@ -132,11 +132,9 @@ export const executeAction = async (
             await new Promise((resolve) =>
               setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
             );
-          }
-          break;
-        case "tab":
-          for (let i = 0; i < times; i++) {
-            let pos = editor.getPosition();
+            break;
+          case "tab":
+            pos = editor.getPosition();
             // @ts-ignore
             pos.lineNumber = pos.lineNumber + 2;
             console.log("moving pos to", pos);
@@ -144,11 +142,9 @@ export const executeAction = async (
             await new Promise((resolve) =>
               setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
             );
-          }
-          break;
-        case "arrow-left":
-          for (let i = 0; i < times; i++) {
-            let pos = editor.getPosition();
+            break;
+          case "arrow-left":
+            pos = editor.getPosition();
             // @ts-ignore
             pos.column = pos.column - 1;
             console.log("moving pos to", pos);
@@ -156,11 +152,9 @@ export const executeAction = async (
             await new Promise((resolve) =>
               setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
             );
-          }
-          break;
-        case "arrow-right":
-          for (let i = 0; i < times; i++) {
-            let pos = editor.getPosition();
+            break;
+          case "arrow-right":
+            pos = editor.getPosition();
             // @ts-ignore
             pos.column = pos.column + 1;
             console.log("moving pos to", pos);
@@ -168,41 +162,51 @@ export const executeAction = async (
             await new Promise((resolve) =>
               setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
             );
-          }
-          break;
-        case "enter":
-          await simulateHumanTyping(editor, "\n");
-          break;
-        case "delete-line":
-          console.log("deleting line");
-          // @ts-ignore
-          let line = editor.getPosition().lineNumber;
-          editor.executeEdits("", [
+            break;
+          case "enter":
+            await simulateHumanTyping(editor, "\n");
+            break;
+          case "delete-line":
+            console.log("deleting line");
             // @ts-ignore
-            { range: new monaco.Range(line, 1, line + 1, 1), text: null },
-          ]);
-          break;
-        default:
-          break;
-        case "highlight-code":
-          highlightText(editor, action.value);
-        case "space":
-          for (let i = 0; i < times; i++) {
-            await simulateHumanTyping(editor, " ");
-          }
-          break;
-        case "backspace":
-          for (let i = 0; i < times; i++) {
-            // @ts-ignore
-            editor.trigger(monaco.KeyCode.Backspace, 'deleteLeft')
+            let line = editor.getPosition().lineNumber;
+            editor.executeEdits("", [
+              // @ts-ignore
+              { range: new monaco.Range(line, 1, line + 1, 1), text: null },
+            ]);
             await new Promise((resolve) =>
               setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
             );
-          }
-          break;
-        case "type-text":
-          await simulateHumanTyping(editor, action.value);
-          break;
+            break;
+          case "command-right":
+            // simulate moving to the end of the current line
+            // @ts-ignore
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = 100000;
+            editor.setPosition(pos);
+            await new Promise((resolve) =>
+              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
+            );
+            break;
+          default:
+            break;
+          case "highlight-code":
+            highlightText(editor, action.value);
+          case "space":
+            await simulateHumanTyping(editor, " ");
+            break;
+          case "backspace":
+            // @ts-ignore
+            editor.trigger(monaco.KeyCode.Backspace, "deleteLeft");
+            await new Promise((resolve) =>
+              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
+            );
+            break;
+          case "type-text":
+            await simulateHumanTyping(editor, action.value);
+            break;
+        }
       }
       return startTime;
     },

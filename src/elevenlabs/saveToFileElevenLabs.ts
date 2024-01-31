@@ -14,12 +14,12 @@ interface TextToSpeechRequest {
   voice_settings: VoiceSettings;
 }
 
-export const saveToFileElevenLabs = async (id: number, textToSpeak: string, audioFolderPath: string, forceOverwrite: boolean) => {
+export const saveToFileElevenLabs = async (filename: string, textToSpeak: string, audioFolderPath: string, forceOverwrite: boolean) => {
 
   // if the file exists already, don't do anything - save money :)
-  const filePath = `${audioFolderPath}/${id}.mp3`;
+  const filePath = `${audioFolderPath}/${filename}.mp3`;
   if (fs.existsSync(filePath) && !forceOverwrite) {
-    console.log(`File for step ${id} already exists. Skipping...`);
+    console.log(`File with hash ${filename} already exists. Skipping...`);
     return;
   }
 
@@ -60,7 +60,7 @@ export const saveToFileElevenLabs = async (id: number, textToSpeak: string, audi
 
     // write the byte data to an mp3 file
     const buffer = await response.arrayBuffer();
-    const filePath = `${audioFolderPath}/${id}.mp3`;
+    const filePath = `${audioFolderPath}/${filename}.mp3`;
 
     // write the file with fs
     fs.writeFileSync(filePath, Buffer.from(buffer));

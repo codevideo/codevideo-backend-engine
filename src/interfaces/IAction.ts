@@ -1,7 +1,7 @@
 
 type SimpleKeyboardActions = "type-text" | "type-editor" | "type-terminal" | "arrow-up" | "arrow-down" | "arrow-left" | "arrow-right" | "enter" | "tab" | "shift+arrow-right" | "cmd+d" | "backspace" | "space";
 
-type ComplexKeyboardActions = "highlight-code" | "delete-line";
+type ComplexKeyboardActions = "highlight-code" | "delete-line" | "command-right"
 
 type ClickActions = "click-terminal" | "click-editor";
 

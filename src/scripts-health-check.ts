@@ -6,6 +6,7 @@ import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAud
 import { IStep } from "./interfaces/IStep";
 import { IAction } from "./interfaces/IAction";
 import { isSpeakAction } from "./type-guards/isSpeakAction";
+import { sha256Hash } from "./utils/sha256Hash";
 
 const scriptsHealthCheck = async () => {
   // load in the actions file
@@ -13,26 +14,26 @@ const scriptsHealthCheck = async () => {
 
   // for each script, generate the transcript with OpenAI whisper, then compare the original text with the resulting transcript using levenshtein distance
   for (let i = 0; i < actions.length; i++) {
-    const id = i;
+    const textHash = sha256Hash(actions[i].value);
     const action = actions[i];
 
     if (isSpeakAction(action)) {
-      await checkForArtifacts(id, action, actionsAudioDirectory);
+      await checkForArtifacts(textHash, action, actionsAudioDirectory);
     }
   }
 };
 
 const checkForArtifacts = async (
-  id: number,
+  textHash: string,
   action: IAction,
   stepsAudioPath: string
 ) => {
   // generate transcript
   const textToSpeak = action.value;
-  const transcript = await speechToText(`${stepsAudioPath}/${id}.mp3`);
+  const transcript = await speechToText(`${stepsAudioPath}/${textHash}.mp3`);
   if (!transcript) {
     console.log(
-      `Script step ID ${id}: Error creating transcript from audio file (${stepsAudioPath}/${id}.mp3)`
+      `Script with hash ${textHash}: Error creating transcript from audio file (${stepsAudioPath}/${textHash}.mp3)`
     );
     return;
   }
@@ -42,19 +43,19 @@ const checkForArtifacts = async (
     preprocessStringForComparison(transcript)
   );
   // if the levenstein distance is greater than 5, log the results
-  if (distance > 5) {
-    console.log("WARNING - POTENTIAL ARTIFACT DETECTED!");
+  if (distance > 0) {
+    console.log("WARNING - POTENTIAL ARTIFACTS DETECTED!");
     console.log(
-      `Script step ID ${id}:\nOriginal: ${textToSpeak}\nTranscript: ${transcript}\nLevenshtein distance: ${distance}`
+      `Script step ID ${textHash}:\nOriginal: ${textToSpeak}\nTranscript: ${transcript}\nLevenshtein distance: ${distance}`
     );
     // and regenerate the audio for this step
-    console.log(`Regenerating audio for step ${id}...`);
+    console.log(`Regenerating audio for step ${textHash}...`);
     if (isSpeakAction(action)) {
       await convertSpeakActionsToAudio([action], stepsAudioPath, true);
     }
   } else {
     console.log(
-      `Script step ID ${id}: No artifacts detected. (Levenshtein distance: ${distance})`
+      `Script step ID ${textHash}: No artifacts detected. (Levenshtein distance: ${distance})`
     );
   }
 };
