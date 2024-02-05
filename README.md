@@ -155,3 +155,19 @@ As is always the case with character or word based cost models, the amount of te
 ```bash
 npm run scripts-character-count ./examples/hello-world.json
 ```
+
+
+### `code-health-check`
+
+This command runs a health check of code after each `type` event, checking for any strange formatting or syntax errors. If it finds any, it will print out the file name and the error.
+
+```bash
+npm run code-health-check ./examples/hello-world.json
+```
+
+## Desktop Automation
+
+Due to the state of `robotjs`, a few caveats are required to properly run desktop automation actions:
+
+- Need exactly one 1920x1080 monitor
+- Bug fix for key press (see implementation)

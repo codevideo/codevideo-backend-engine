@@ -12,7 +12,8 @@ const scriptsHealthCheck = async () => {
   // load in the actions file
   const { actions, actionsAudioDirectory } = loadActions('typescript');
 
-  // for each script, generate the transcript with OpenAI whisper, then compare the original text with the resulting transcript using levenshtein distance
+  // for each script, generate the transcript with OpenAI whisper, 
+  // then compare the original text with the resulting transcript using levenshtein distance
   for (let i = 0; i < actions.length; i++) {
     const textHash = sha256Hash(actions[i].value);
     const action = actions[i];

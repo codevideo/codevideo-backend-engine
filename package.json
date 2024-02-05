@@ -10,23 +10,31 @@
     "clean": "rm -rf ./dist/* && rm -rf ./audio/*.mp3 && rm -rf ./video/*.mp4",
     "make-video": "npm run build && node ./dist/index.js",
     "scripts-char-count": "npm run build && node ./dist/scripts-char-count.js",
-    "scripts-health-check": "npm run build && node ./dist/scripts-health-check.js"
+    "scripts-health-check": "npm run build && node ./dist/scripts-health-check.js",
+    "code-health-check": "npm run build && node ./dist/code-health-check.js",
+    "test-click-by-text": "npm run build && node ./dist/test-click-by-text.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "fluent-ffmpeg": "^2.1.2",
     "isomorphic-fetch": "^3.0.0",
+    "jimp": "^0.22.10",
     "monaco-editor": "^0.45.0",
     "openai": "^4.24.7",
     "puppeteer": "^21.7.0",
     "puppeteer-screen-recorder": "^2.1.2",
-    "say": "^0.16.0"
+    "robotjs": "^0.6.0",
+    "say": "^0.16.0",
+    "sound-play": "^1.1.0",
+    "tesseract.js": "^5.0.4"
   },
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.24",
     "@types/isomorphic-fetch": "^0.0.39",
+    "@types/play-sound": "^1.1.2",
+    "@types/sound-play": "^1.1.3",
     "typescript": "^5.3.3"
   }
 }

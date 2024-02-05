@@ -55,6 +55,12 @@ export const executeAction = async (
           typeNextCharacter();
         });
       };
+      
+      const simulateKeyboardPause = async () => {
+        await new Promise((resolve) =>
+          setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
+        );
+      }
 
       const highlightText = (
         editor: monaco.editor.IStandaloneCodeEditor,
@@ -119,9 +125,7 @@ export const executeAction = async (
             pos.lineNumber = pos.lineNumber + 1;
             console.log("moving pos to", pos);
             editor.setPosition(pos);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "arrow-up":
             pos = editor.getPosition();
@@ -129,9 +133,7 @@ export const executeAction = async (
             pos.lineNumber = pos.lineNumber - 1;
             console.log("moving pos to", pos);
             editor.setPosition(pos);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "tab":
             pos = editor.getPosition();
@@ -139,9 +141,7 @@ export const executeAction = async (
             pos.lineNumber = pos.lineNumber + 2;
             console.log("moving pos to", pos);
             editor.setPosition(pos);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "arrow-left":
             pos = editor.getPosition();
@@ -149,9 +149,7 @@ export const executeAction = async (
             pos.column = pos.column - 1;
             console.log("moving pos to", pos);
             editor.setPosition(pos);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "arrow-right":
             pos = editor.getPosition();
@@ -159,9 +157,7 @@ export const executeAction = async (
             pos.column = pos.column + 1;
             console.log("moving pos to", pos);
             editor.setPosition(pos);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "enter":
             await simulateHumanTyping(editor, "\n");
@@ -174,9 +170,7 @@ export const executeAction = async (
               // @ts-ignore
               { range: new monaco.Range(line, 1, line + 1, 1), text: null },
             ]);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "command-right":
             // simulate moving to the end of the current line
@@ -185,9 +179,7 @@ export const executeAction = async (
             // @ts-ignore
             pos.column = 100000;
             editor.setPosition(pos);
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           default:
             break;
@@ -199,9 +191,7 @@ export const executeAction = async (
           case "backspace":
             // @ts-ignore
             editor.trigger(monaco.KeyCode.Backspace, "deleteLeft");
-            await new Promise((resolve) =>
-              setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
-            );
+            await simulateKeyboardPause();
             break;
           case "type-text":
             await simulateHumanTyping(editor, action.value);
