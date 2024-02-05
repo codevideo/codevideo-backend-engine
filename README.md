@@ -12,7 +12,7 @@ Implementation of a Fibonacci function in TypeScript in a Monaco editor at `loca
 
 Using the actual Visual Studio Code application, demonstrating how to use JavaScript's console.log function in Node.js, including opening the file and starting the script from the terminal. Driven by [`robotjs`](https://github.com/octalmage/robotjs) (cloned by CodeVideo and soon to be improved at [`robotts`](https://github.com/codevideo/robotts)):
 
-- [JavaScript console.log in Node.js](./video-examples/console-log.mp4)
+- [JavaScript console.log in Node.js](./video-examples/console-log.mov)
 
 ## Voices
 
