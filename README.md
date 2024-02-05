@@ -1,6 +1,28 @@
-# Zoinkr
+# CodeVideo AI
 
-Create beautifully realistic automated software videos with the monaco editor!
+Create shockingly realistic automated software videos!
+
+WIP - this documentation is partially incorrect and incomplete.
+
+## Examples
+
+Implementation of a Fibonacci function in TypeScript in a Monaco editor at `localhost`, driven by puppeteer:
+
+- [TypeScript Fibonacci implementation](./video-examples/fibonacci.mp4)
+
+Using the actual Visual Studio Code application, demonstrating how to use JavaScript's console.log function in Node.js, including opening the file and starting the script from the terminal. Driven by [`robotjs`](https://github.com/octalmage/robotjs) (cloned by CodeVideo and soon to be improved at [`robotts`](https://github.com/codevideo/robotts)):
+
+- [JavaScript console.log in Node.js](./video-examples/console-log.mp4)
+
+## Voices
+
+### Free
+
+You can use say.js for free, but this will be a very robotic sounding voice.
+
+### Paid
+
+Currently, we support adding any eleven labs voice, including a custom one. (For inspiration on what to record to train a voice, we recommend recording yourself reading blog posts or other text that you find interesting - we had great results with just 45 minutes of recorded audio, when the 'optimum' amount is supposed to be 3 hours or more.)
 
 ## Installation
 
@@ -8,9 +30,9 @@ Create beautifully realistic automated software videos with the monaco editor!
 npm install
 ```
 
-## Step Files
+## Automation API
 
-The automation api works via an array of actions. These actions are defined in a actions file. The actions file is a json file that contains an array of actions. Each action has a `type` and `data` property. The `type` property is the type of action to perform, and the `data` property is the data to use for the action.
+The automation API works via an array of actions, each represented by an object with a `name` and `value` property. These actions can be defined in a actions file. The actions file is a json file that contains an array of actions. Each action has a `type` and `data` property. The `type` property is the type of action to perform, and the `data` property is the data to use for the action.
 
 ```json
 [

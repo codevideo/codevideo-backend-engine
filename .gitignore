@@ -7,3 +7,6 @@ dist
 # all mp3 and mp4 files
 *.mp3
 *.mp4
+
+# environment file
+.env
