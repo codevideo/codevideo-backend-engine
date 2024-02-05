@@ -6,6 +6,8 @@ WIP - this documentation is partially incorrect and incomplete.
 
 ## Examples
 
+Looks like GitHub isn't very friendly for video embeds, you can see the Fibonacci example [on our website at codevideo.ai](https://codevideo.io/ai).
+
 Implementation of a Fibonacci function in TypeScript in a Monaco editor at `localhost`, driven by puppeteer:
 
 - [TypeScript Fibonacci implementation](./video-examples/fibonacci.mp4)
