@@ -6,7 +6,25 @@ import { speakAsClonedVoice } from "./utils/speakAsClonedVoice";
 import { wait } from "./utils/wait";
 const { exec } = require("child_process");
 
-// bug fix function
+// standard 16:9 screen dimensions
+// const screenDimensions = { width: 1920, height: 1080 };
+// 2019 macbook pro 16" screen dimensions
+const screenDimensions = { width: 2880, height: 1800 };
+
+const centerPoint = {
+  x: screenDimensions.width / 2,
+  y: screenDimensions.height / 2,
+};
+const upperThirdCenter = {
+  x: screenDimensions.width / 2,
+  y: screenDimensions.height / 3,
+};
+const bottomThirdCenter = {
+  x: screenDimensions.width / 2,
+  y: (screenDimensions.height / 3) * 2,
+};
+
+// robotjs bug fix function
 const keyTap = (key: string = "", modifiers: Array<string> = []) => {
   robot.keyToggle(key, "down", modifiers);
   robot.keyToggle(key, "up", modifiers); // Let up modifier keys in same way they were pressed
@@ -15,40 +33,47 @@ const keyTap = (key: string = "", modifiers: Array<string> = []) => {
 
 // Function to start QuickTime screen recording
 const startScreenRecording = async () => {
-  // Open QuickTime
-  exec("open -a QuickTime\\ Player");
+  // Start screen recording in the format of ~/Movies/Screen\ Recording <date>.mov
+  exec(
+    `screencapture -v -g ~/Movies/Screen\ Recording $(date +'%Y-%m-%d_%H-%M-%S').mov`
+  );
 
-  // Wait for QuickTime to open
-  setTimeout(() => {
-    // Press the keyboard shortcut to start screen recording
-    keyTap("n", ["command"]);
-  }, 2000); 
-  
-
+  // Wait for the screen recording to start
+  setTimeout(() => {}, 2000);
 };
 
-const testClickByText = async () => {
-  const centerPoint = { x: 960, y: 540 };
-  const upperThirdCenter = { x: 960, y: 180 };
-  const bottomThirdCenter = { x: 960, y: 900 };
-
+const moveToRightDesktop = async () => {
+  console.log("Moving to right desktop")
   // 1. issue control right to get to the test vs code editor window
-  // keyTap("right", "control");
-  // keyTap("right", "control");
+  keyTap("right", ["control"]);
 
   // 2. wait a bit so we can move to the proper screen
-  await wait(3000);
+  await wait(2000);
+};
 
+const moveToLeftDesktop = async () => {
+  console.log("Moving to left desktop")
+  // 1. issue control left to get to the test vs code editor window
+  keyTap("left", ["control"]);
+
+  // 2. wait a bit so we can move to the proper screen
+  await wait(2000);
+};
+
+const moveMouseToCenterOfScreen = async () => {
+  console.log("Moving mouse to center of screen")
   // move the mouse to the center of the 1920x1080 screen
   robot.moveMouseSmooth(centerPoint.x, centerPoint.y, 2);
+};
 
-  // 2. issue command shift 3 to take a screenshot
+const clickVSCodeFileByName = async (fileName: string) => {
+  // issue command shift 3 to take a screenshot
   keyTap("3", ["command", "shift"]);
 
-  // 3. wait a bit for the screenshot to be taken and find coordinates of text and everything
-  await wait(10000);
+  // wait a bit for the screenshot to be taken and find coordinates of text and everything
+  await wait(1000);
 
-  // 4. get the file name of the screenshot - it will have a (2) since it is from the second monitor
+  // get the file name of the screenshot - it will have a (2) since it is from the second monitor
   const screenshotFileName = findFileWithCharacters(
     "/Users/chris/Desktop",
     "Screenshot"
@@ -61,8 +86,7 @@ const testClickByText = async () => {
     console.log(`Screenshot found at ${screenshotFileName}`);
   }
 
-  // 5. use the screenshot to find the coordinates of the "helloworld.ts" file
-  const fileName = "hello-world.js";
+  // use the screenshot to find the coordinates of the "helloworld.ts" file
   const filePoint = await findTextCoordinatesFromImage(
     screenshotFileName,
     fileName
@@ -73,6 +97,32 @@ const testClickByText = async () => {
     return;
   }
 
+  // move to the file
+  // await moveMouseInHumanLikeWay(centerPoint, filePoint, "arc-above", false);
+  robot.moveMouseSmooth(filePoint.x + 100, filePoint.y, 1);
+
+  // wait a bit to move to the file
+  await wait(1000);
+
+  // click to open the file
+  robot.mouseClick();
+
+  // wait a bit for the file to open
+  await wait(1000);
+};
+
+const moveUpperThirdCenter = async () => {
+  robot.moveMouseSmooth(upperThirdCenter.x, upperThirdCenter.y, 2);
+};
+
+const testClickByText = async () => {
+  // start screen recording
+  await startScreenRecording();
+
+  await moveToRightDesktop();
+
+  await moveMouseToCenterOfScreen();
+
   // click to ensure screen is in focus
   robot.mouseClick();
 
@@ -82,24 +132,13 @@ const testClickByText = async () => {
   );
 
   await speakAsClonedVoice(
-    `I've already got a ${fileName} file prepared here - let's open it up.`
+    `I've already got a hello-world.js file prepared here - let's open it up.`
   );
 
-  // 6. move to the file
-  // await moveMouseInHumanLikeWay(centerPoint, filePoint, "arc-above", false);
-  robot.moveMouseSmooth(filePoint.x + 100, filePoint.y, 1);
-
-  // wait a bit for the file to open
-  await wait(1000);
-
-  // click to open the file
-  robot.mouseClick();
-
-  // wait a bit for the file to open
-  await wait(1000);
+  await clickVSCodeFileByName("hello-world.js");
 
   // 7. click somewhere near the top of the editor to make sure we can type in it
-  robot.moveMouseSmooth(upperThirdCenter.x, upperThirdCenter.y, 2);
+  await moveUpperThirdCenter();
 
   // wait a bit for mouse to move
   await wait(1000);

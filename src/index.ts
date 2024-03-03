@@ -12,7 +12,10 @@ const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
 let trueAudioStartTime = 0;
 
 // loading from json file, do it like this:
-const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('typescript');
+const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('json');
+
+// for a typescript file, the actions are loaded from the typescript.json file
+// const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('typescript');
 
 // create a file in audio/{fileNameWithoutExtension} if it doesn't already exist
 if (!fs.existsSync(actionsAudioDirectory)) {

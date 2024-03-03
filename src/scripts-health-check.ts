@@ -3,10 +3,11 @@ import { loadActions } from "./io/loadActions";
 import { speechToText } from "./openai/speechToText";
 import { levenshteinDistance } from "./utils/levenshteinDistance";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio";
-import { IStep } from "./interfaces/IStep";
 import { IAction } from "./interfaces/IAction";
 import { isSpeakAction } from "./type-guards/isSpeakAction";
 import { sha256Hash } from "./utils/sha256Hash";
+
+const distanceThreshold = 0;
 
 const scriptsHealthCheck = async () => {
   // load in the actions file
@@ -43,11 +44,11 @@ const checkForArtifacts = async (
     preprocessStringForComparison(textToSpeak),
     preprocessStringForComparison(transcript)
   );
-  // if the levenstein distance is greater than 5, log the results
-  if (distance > 0) {
+  // if the levenshtein distance is greater than distanceThreshold, log the results
+  if (distance > distanceThreshold) {
     console.log("WARNING - POTENTIAL ARTIFACTS DETECTED!");
     console.log(
-      `Script step ID ${textHash}:\nOriginal: ${textToSpeak}\nTranscript: ${transcript}\nLevenshtein distance: ${distance}`
+      `Text hash: ${textHash}:\nOriginal: ${textToSpeak}\nTranscript: ${transcript}\nLevenshtein distance: ${distance}`
     );
     // and regenerate the audio for this step
     console.log(`Regenerating audio for step ${textHash}...`);
@@ -56,7 +57,7 @@ const checkForArtifacts = async (
     }
   } else {
     console.log(
-      `Script step ID ${textHash}: No artifacts detected. (Levenshtein distance: ${distance})`
+      `Text hash: ${textHash}: No artifacts detected. (Levenshtein distance: ${distance})`
     );
   }
 };

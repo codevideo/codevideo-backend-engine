@@ -1,7 +1,5 @@
 import fs from 'fs';
 import fetch from 'isomorphic-fetch';
-import { IStep } from '../interfaces/IStep';
-import { IAction } from '../interfaces/IAction';
 
 interface VoiceSettings {
   stability: number;
@@ -14,7 +12,19 @@ interface TextToSpeechRequest {
   voice_settings: VoiceSettings;
 }
 
+// eleven lab's can't handle reading of "C#" very well
+const customTransforms: Record<string, string> = {
+  "C#": "C sharp",
+}
+
 export const saveToFileElevenLabs = async (filename: string, textToSpeak: string, audioFolderPath: string, forceOverwrite: boolean) => {
+
+  // apply custom transforms to the text
+  for (const key in customTransforms) {
+    if (textToSpeak.includes(key)) {
+      textToSpeak = textToSpeak.replace(new RegExp(key, 'g'), customTransforms[key]);
+    }
+  }
 
   // if the file exists already, don't do anything - save money :)
   const filePath = `${audioFolderPath}/${filename}.mp3`;
@@ -43,7 +53,7 @@ export const saveToFileElevenLabs = async (filename: string, textToSpeak: string
     // elli voice id MF3mGyEYCl7XYWbV9V6O
     // Chris voice (my own professional voice) id 1RLeGxy9FHYB5ScpFkts
     const response = await fetch(
-      'https://api.elevenlabs.io/v1/text-to-speech/1RLeGxy9FHYB5ScpFkts',
+      `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVEN_LABS_VOICE_ID || ''}`,
       {
         method: 'POST',
         headers: headers,
