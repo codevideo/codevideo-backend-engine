@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { IAction } from "../interfaces/IAction";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
 import { sumActions } from "../examples/sum";
 import { fibonacciActions } from './../examples/fibonacci';
 import { enumExtensionsActions } from "../examples/enumExtensions";

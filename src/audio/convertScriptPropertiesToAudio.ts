@@ -1,9 +1,7 @@
 import say from "say";
-import { IStep } from "../interfaces/IStep";
 import { saveToFileSay } from "../say/saveToFileSay";
 import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs";
-import { IAction, SpeakAction } from "../interfaces/IAction";
-import { isSpeakAction } from "../type-guards/isSpeakAction";
+import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
 import { sha256Hash } from "../utils/sha256Hash";
 import { saveToFileOpenAI } from "../openai/saveToFileOpenAI";
 

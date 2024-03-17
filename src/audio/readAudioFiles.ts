@@ -1,13 +1,13 @@
-import { AudioFile } from "../interfaces/IAudioFile";
+import { IAudioFile } from "@fullstackcraftllc/codevideo-types";
 import fs from "fs";
 import path from "path";
 
 export const readAudioFiles = async (
   audioFolderPath: string
-): Promise<AudioFile[]> => {
+): Promise<IAudioFile[]> => {
   try {
     const files = await fs.promises.readdir(audioFolderPath);
-    const audioFiles: AudioFile[] = [];
+    const audioFiles: IAudioFile[] = [];
 
     for (const file of files) {
       const filePath = path.join(audioFolderPath, file);

@@ -12,12 +12,15 @@
     "scripts-char-count": "npm run build && node ./dist/scripts-char-count.js",
     "scripts-health-check": "npm run build && node ./dist/scripts-health-check.js",
     "code-health-check": "npm run build && node ./dist/code-health-check.js",
-    "test-click-by-text": "npm run build && node ./dist/test-click-by-text.js"
+    "visual-studio-code-driver": "npm run build && node ./dist/visual-studio-code-driver.js"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@fullstackcraftllc/codevideo-types": "^1.0.8",
+    "@fullstackcraftllc/syntax-spy": "^1.0.4",
+    "@fullstackcraftllc/virtual-code-block": "^1.1.0",
     "fluent-ffmpeg": "^2.1.2",
     "isomorphic-fetch": "^3.0.0",
     "jimp": "^0.22.10",

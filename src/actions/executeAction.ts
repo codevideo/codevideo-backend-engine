@@ -1,6 +1,6 @@
 import { Page } from "puppeteer";
 import type monaco from "monaco-editor";
-import { IAction } from "../interfaces/IAction";
+import { IAction } from "@fullstackcraftllc/codevideo-types"
 
 export const executeAction = async (
   page: Page,
@@ -193,7 +193,7 @@ export const executeAction = async (
             editor.trigger(monaco.KeyCode.Backspace, "deleteLeft");
             await simulateKeyboardPause();
             break;
-          case "type-text":
+          case "type-editor":
             await simulateHumanTyping(editor, action.value);
             break;
         }

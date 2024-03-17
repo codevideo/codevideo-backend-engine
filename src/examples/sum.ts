@@ -1,4 +1,4 @@
-import { IAction } from "../interfaces/IAction";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
 
 export const sumActions: Array<IAction> = [
   {
@@ -11,7 +11,7 @@ export const sumActions: Array<IAction> = [
     value: "Let's start with the signature of the function.",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "const sum = (a: number, b: number) => {\n\n}",
   },
   {
@@ -23,7 +23,7 @@ export const sumActions: Array<IAction> = [
     value: "3",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "/**\n * Adds two numbers together.\n * @param a The first number to add.\n * @param b The second number to add.\n */\n",
   },
@@ -37,7 +37,7 @@ export const sumActions: Array<IAction> = [
       "Finally, we'll add the body of the function. For such a simple function, not much more discussion is needed, we just use the built in 'plus' operator to return the sum of a and b.",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  return a + b;",
   },
   {
@@ -62,7 +62,7 @@ export const sumActions: Array<IAction> = [
     value: "19",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: " a + b;",
   },
   {

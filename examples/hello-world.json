@@ -1,25 +1,38 @@
 [
   {
-    "id": 1,
-    "script": "To represent that this file is 'index.js', I'll just put a comment here",
-    "action": "edit",
-    "filename": "index.js",
-    "code": "// index.js"
+    "name": "speak-before",
+    "value": "To represent that this file is 'index.js', I'll just put a comment here"
   },
   {
-    "id": 2,
-    "script": "Then, we'll add a simple console.log statement to the file. We'll learn in the coming lessons what the console is and how to use it.",
-    "action": "edit",
-    "filename": "index.js",
-    "specialCommands": ["down"],
-    "code": "console.log(\"Hello, world!\");"
+    "name": "type-editor",
+    "value": "// index.js"
   },
   {
-    "id": 3,
-    "script": "For example, if I wanted to write the value of some variable, I could do that with console.log.",
-    "action": "edit",
-    "filename": "index.js",
-    "specialCommands": ["down"],
-    "code": "var myVariable = \"Important variable I want to keep track of\";\nconsole.log(myVariable);"
+    "name": "speak-before",
+    "value": "Then, we'll add a simple console.log statement to the file. We'll learn in the coming lessons what the console is and how to use it."
+  },
+  {
+    "name": "type-editor",
+    "value": "console.log('Hello, world!');"
+  },
+  {
+    "name": "speak-before",
+    "value": "For example, if I wanted to write the value of some variable, I could do that with console.log."
+  },
+  {
+    "name": "backspace",
+    "value": "29"
+  },
+  {
+    "name": "type-editor",
+    "value": "const myVariable = 'Important variable I want to keep track of';"
+  },
+  {
+    "name": "enter",
+    "value": "1"
+  },
+  {
+    "name": "type-editor",
+    "value": "console.log(myVariable);"
   }
 ]

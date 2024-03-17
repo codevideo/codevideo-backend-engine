@@ -1,6 +1,6 @@
 import { Bbox, Block, createWorker, PSM } from "tesseract.js";
 import Jimp from "jimp";
-import { IPoint } from "../interfaces/IPoint";
+import { IPoint } from "@fullstackcraftllc/codevideo-types";
 import fs from "fs";
 
 export const findTextCoordinatesFromImage = async (
@@ -16,20 +16,17 @@ export const findTextCoordinatesFromImage = async (
 
   const image = await Jimp.read(imagePath);
   const imageBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
-
   const { data } = await worker.recognize(imageBuffer);
 
-  console.log(data.blocks);
-
-  // log each text block
-  data.blocks?.forEach((block: Block) => {
-    console.log(block.text);
-  });
+  // helpful for debugging: log each text block
+  // data.blocks?.forEach((block: Block) => {
+  //   console.log(block.text);
+  // });
 
   const bounds = data.blocks
     ?.filter(({ text }) => text.trim().includes(searchText))
     .map((block: Block) => {
-      console.log("found block: ", block)
+      // console.log("found block: ", block)
       const boundingBox: Bbox = block.bbox;
       // full bounding box
       // return {

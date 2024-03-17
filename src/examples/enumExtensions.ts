@@ -1,4 +1,4 @@
-import { IAction } from "../interfaces/IAction";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
 
 export const enumExtensionsActions: Array<IAction> = [
   {
@@ -7,7 +7,7 @@ export const enumExtensionsActions: Array<IAction> = [
       "In this article, we'll explore how to enhance your C# enums with two useful extensions in a generic manner.",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "public static class EnumExtensions {\n\n}",
   },
   {
@@ -20,7 +20,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "2",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "public static string GetDescriptionFromAttribute(this Enum value) {\n\n}",
   },
@@ -29,7 +29,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "3",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  var fieldInfo = value.GetType().GetField(value.ToString());",
   },
   {
@@ -37,7 +37,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "1",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  if (fieldInfo == null) return value.ToString();",
   },
   {
@@ -45,7 +45,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "3",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "  var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);",
   },
@@ -54,7 +54,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "1",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "  return attributes.Any() ? attributes[0].Description : value.ToString();",
   },
@@ -68,7 +68,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "2",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "public static T CustomParse<T>(string? stringValue, T defaultValue) where T : Enum {\n\n}",
   },
@@ -77,7 +77,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "2",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  if (stringValue == null) return defaultValue;",
   },
   {
@@ -85,7 +85,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "3",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  var enumType = typeof(T);",
   },
   {
@@ -93,7 +93,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "3",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  foreach (var fieldInfo in enumType.GetFields()) {\n\n}",
   },
   {
@@ -101,7 +101,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "3",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "    var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);",
   },
@@ -110,7 +110,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "2",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "    if (attributes.Any() && attributes[0].Description == stringValue)",
   },
@@ -119,7 +119,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "1",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "      return (T)fieldInfo.GetValue(null)!;",
   },
   {
@@ -127,7 +127,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "2",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "    if (fieldInfo.Name == stringValue) return (T)fieldInfo.GetValue(null)!;",
   },
@@ -136,7 +136,7 @@ export const enumExtensionsActions: Array<IAction> = [
     value: "1",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "  return defaultValue;",
   },
   {

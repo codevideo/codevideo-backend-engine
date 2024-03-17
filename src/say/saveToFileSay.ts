@@ -1,5 +1,4 @@
 import say from "say";
-import { IStep } from "../interfaces/IStep";
 
 export const saveToFileSay = async (id: number, text: string, audioFolderPath: string) => {
   await say.export(

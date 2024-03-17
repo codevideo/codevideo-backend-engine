@@ -8,7 +8,7 @@
     "value": "We will start by creating a new static class called `EnumExtensions`."
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "public static class EnumExtensions\n{\n\n}"
   },
   {
@@ -20,7 +20,7 @@
     "value": "Now let's define the signature of the method."
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "    public static string GetDescriptionFromAttribute(this Enum value)\n    {\n\n    }"
   },
   {
@@ -36,7 +36,7 @@
     "value": "1"
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "        var fieldInfo = value.GetType().GetField(value.ToString());"
   },
   {
@@ -48,7 +48,7 @@
     "value": "We use reflection to get the FieldInfo of this enum type. Now let's process the edge-case where the value is null."
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "        if (fieldInfo == null) return value.ToString();"
   },
   {
@@ -64,7 +64,7 @@
     "value": "Up next, we acquire the custom attributes associated with our Enum value."
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "        var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);"
   },
   {
@@ -76,7 +76,7 @@
     "value": "Now, we check to see if there is at least one DescriptionAttribute. If there is, we return the description from the first attribute, otherwise we will return the original value."
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "        return attributes.Any() ? attributes[0].Description : value.ToString();"
   },
   {
@@ -92,7 +92,7 @@
     "value": "40"
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "using System;\nusing System.ComponentModel;\nusing System.Linq;\n\n"
   },
   {

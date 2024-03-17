@@ -4,7 +4,7 @@
     "value": "To showcase how this tool works, we'll do a simple hello world example."
   },
   {
-    "name": "type-text",
+    "name": "type-editor",
     "value": "console.log('Hello World!');"
   },
   {

@@ -1,4 +1,4 @@
-import { IAction } from "../interfaces/IAction";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
 
 export const fibonacciActions: Array<IAction> = [
   {
@@ -7,7 +7,7 @@ export const fibonacciActions: Array<IAction> = [
       "In this quick tutorial, we'll walk through the creation of a Fibonacci calculation function in TypeScript.",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "// fibonacci.ts\n",
   },
   {
@@ -21,7 +21,7 @@ export const fibonacciActions: Array<IAction> = [
       "Now, let's define the function signature. We want our function to calculate the nth Fibonacci number, so our function will take a single parameter 'n' of type 'number', which represents the position in the Fibonacci sequence, and also return a number.",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value: "const fibonacci = (n: number): number => {\n\n}",
   },
   {
@@ -34,7 +34,7 @@ export const fibonacciActions: Array<IAction> = [
     value: "2",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "/**\n * Calculates the nth Fibonacci number.\n * @param n The position in the Fibonacci sequence.\n */\n",
   },
@@ -47,7 +47,7 @@ export const fibonacciActions: Array<IAction> = [
     value: "1",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "  if (n <= 1) return n;\n  return fibonacci(n - 1) + fibonacci(n - 2);",
   },
@@ -82,7 +82,7 @@ export const fibonacciActions: Array<IAction> = [
     value: "1",
   },
   {
-    name: "type-text",
+    name: "type-editor",
     value:
       "  const memo: Record<number, number> = {};\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return memo[n] = fibonacci(n - 1) + fibonacci(n - 2);",
   },

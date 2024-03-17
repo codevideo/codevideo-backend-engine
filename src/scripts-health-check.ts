@@ -3,8 +3,7 @@ import { loadActions } from "./io/loadActions";
 import { speechToText } from "./openai/speechToText";
 import { levenshteinDistance } from "./utils/levenshteinDistance";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio";
-import { IAction } from "./interfaces/IAction";
-import { isSpeakAction } from "./type-guards/isSpeakAction";
+import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
 import { sha256Hash } from "./utils/sha256Hash";
 
 const distanceThreshold = 0;

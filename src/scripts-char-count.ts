@@ -1,6 +1,5 @@
-import { SpeakAction } from "./interfaces/IAction";
+import { convertActionsToSpeakActions } from "@fullstackcraftllc/codevideo-types";
 import { loadActions } from "./io/loadActions";
-import { convertActionsToSpeakActions } from "./type-guards/isSpeakAction";
 
 const scriptChartCount = () => {
   // load in the steps.json file

@@ -1,5 +1,5 @@
 import * as robot from "robotjs";
-import { IPoint } from "../interfaces/IPoint";
+import { IPoint } from "@fullstackcraftllc/codevideo-types";
 
 type BezierCurveType =
   | "arc-above"

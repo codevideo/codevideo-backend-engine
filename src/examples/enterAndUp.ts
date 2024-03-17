@@ -1,4 +1,4 @@
-import { IAction } from "../interfaces/IAction";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
 
 export const enterAndUpActions: Array<IAction> = [
   {
