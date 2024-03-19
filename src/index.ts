@@ -4,7 +4,6 @@ import fs from "fs";
 import { addAudioToVideo } from "./audio/addAudioToVideo";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio";
 import { buildAudioFile } from "./audio/buildAudioFile";
-import { sumActions } from "./examples/sum";
 import { loadActions } from "./io/loadActions";
 import { sha256Hash } from "./utils/sha256Hash";
 const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
@@ -12,7 +11,13 @@ const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
 let trueAudioStartTime = 0;
 
 // loading from json file, do it like this:
-const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('json');
+const {
+  actions,
+  url,
+  fileNameWithoutExtension,
+  actionsAudioDirectory,
+  textToSpeechOption,
+} = loadActions();
 
 // for a typescript file, the actions are loaded from the typescript.json file
 // const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('typescript');
@@ -49,7 +54,9 @@ const playAudioInPuppeteer = async (
 
   // add the start time to the array
   const startTime = Math.round(performance.now()) - trueAudioStartTime;
-  console.log(`audio ${audioHash} (${filePath}) start time set to: ${startTime}`);
+  console.log(
+    `audio ${audioHash} (${filePath}) start time set to: ${startTime}`
+  );
   audioStartTimes.push(startTime);
   // Wait for the audio playback to complete
   await page.waitForFunction(
@@ -88,7 +95,7 @@ const runPuppeteerAutomation = async (url: string) => {
   // add a 2 second delay before starting the steps
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // before beginning steps, save what current time we are in execution of this program
+  // before beginning steps, save what current time we are in execution of this program
   // needed for accurately calculating the audio start times
   //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
 
@@ -103,12 +110,24 @@ const runPuppeteerAutomation = async (url: string) => {
 
     // special case is audio playback
     if (action.name === "speak-before") {
-      await playAudioInPuppeteer(page, audioHash, `${actionsAudioDirectory}/${audioHash}.mp3`);
+      await playAudioInPuppeteer(
+        page,
+        audioHash,
+        `${actionsAudioDirectory}/${audioHash}.mp3`
+      );
       continue;
+    } else if (action.name === "speak-during") {
+      // use promise.all to play audio and execute action at the same time
+      await Promise.all([
+        playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${actionsAudioDirectory}/${audioHash}.mp3`
+        ),
+        executeAction(page, id, action),
+      ]);
     } else if (action.name === "type-terminal") {
-    
-  } else {
-
+    } else {
       await executeAction(page, id, action);
     }
 
@@ -133,7 +152,8 @@ const main = async () => {
     const audioFiles = await convertSpeakActionsToAudio(
       actions,
       actionsAudioDirectory,
-      false
+      false,
+      textToSpeechOption
     );
 
     // then run the puppeteer automation

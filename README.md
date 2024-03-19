@@ -2,11 +2,39 @@
 
 Create shockingly realistic automated software videos!
 
-WIP - this documentation is partially incorrect and incomplete.
+## Quick Start
 
-## Examples
+Clone this repository and install the dependencies:
 
-Looks like GitHub isn't very friendly for video embeds, you can see the Fibonacci example [on our website at codevideo.ai](https://codevideo.io/ai).
+```bash
+git clone 
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the simple hello world example (explains how to use the console.log function in JavaScript):
+
+```bash
+npm run start ./examples/hello-world.json
+```
+
+Along with some logging to the console on what is going on, a Chrome browser will open, and you will see the puppeteer automation of the Monaco editor begin.
+
+This will generate a variety of files:
+
+- `./audio/*.mp3` - the various speaking action audio files (generated before the video is made)
+- `./audio/hello-world/combined.mp3` - the properly spaced speaking action audios combined and used to interleave into the editor video
+- `./video/hello-world.mp4` - the final video with typing animation and audio
+
+That's it! Create any automation you want by creating a new actions file and passing it to the `start` command.
+
+## Other Examples
+
+Looks like GitHub isn't very friendly for video embeds, you can see a few examples and a Web MVP [on our website at codevideo.ai](https://codevideo.io/ai).
 
 Implementation of a Fibonacci function in TypeScript in a Monaco editor at `localhost`, driven by puppeteer:
 
@@ -16,7 +44,7 @@ Using the actual Visual Studio Code application, demonstrating how to use JavaSc
 
 - [JavaScript console.log in Node.js](./video-examples/console-log.mov)
 
-## Voices
+## Other Text To Speech Engines
 
 ### Free
 
@@ -24,162 +52,186 @@ You can use say.js for free, but this will be a very robotic sounding voice.
 
 ### Paid
 
-Currently, we support adding any eleven labs voice, including a custom one. (For inspiration on what to record to train a voice, we recommend recording yourself reading blog posts or other text that you find interesting - we had great results with just 45 minutes of recorded audio, when the 'optimum' amount is supposed to be 3 hours or more.)
+Currently, we support the following AI voices:
 
-## Installation
+- Eleven Labs* (including a custom studio voices)
+- OpenAI TTS (text-to-speech) 
+
+*For inspiration on what to record to train a voice for Eleven Labs, we recommend recording yourself reading blog posts or other text that you find interesting - we had great results with just 45 minutes of recorded audio, when the 'optimum' amount recommended by Eleven Labs is supposed to be 3 hours or more.
+
+To use Eleven Labs or OpenAI as the voice, you will need to set the `ELEVEN_LABS_API_KEY` + `ELEVEN_LABS_VOICE_ID` or `OPENAI_API_KEY` environment variables respectively.
+
+Then pass as a second argument specifying if you want to use `elevenlabs` or `openai` respectively:
 
 ```bash
-npm install
+npm run start ./examples/hello-world.json elevenlabs
 ```
 
-## Automation API
+```bash
+npm run start ./examples/hello-world.json openai
+```
 
-The automation API works via an array of actions, each represented by an object with a `name` and `value` property. These actions can be defined in a actions file. The actions file is a json file that contains an array of actions. Each action has a `type` and `data` property. The `type` property is the type of action to perform, and the `data` property is the data to use for the action.
+`sayjs` is also acceptable as an engine:
+
+```bash
+npm run start ./examples/hello-world.json sayjs
+```
+
+this is anyway the default and it doesn't need to be explicitely included.
+
+
+## Defining Actions
+
+The API works via an array of actions (type `IAction`), each represented by an object with a `name` and `value` property. These actions can be defined in a actions file. The actions file can be either a json file or a TypeScript file that contains an array of actions.
+
+Here is an example of an action file, the very same one used to drive the hello-world example above:
 
 ```json
 [
   {
     "name": "speak-before",
-    "value": "Let's make a simple 'hello world' program in typescript!"
+    "value": "To represent that this file is 'index.js', I'll just put a comment here"
   },
   {
-    "name": "type",
-    "value": "// hello-world.ts"
+    "name": "type-editor",
+    "value": "// index.js"
   },
   {
     "name": "speak-before",
-    "value": "That's just a comment, but let's actually make a console.log statement."
+    "value": "Then, we'll add a simple console.log statement to the file."
   },
   {
-    "name": "key-down",
+    "name": "enter",
     "value": "1"
   },
   {
-    "name": "type",
-    "value": "console.log('hello world');"
+    "name": "type-editor",
+    "value": "console.log('Hello, world!');"
+  },
+  {
+    "name": "speak-before",
+    "value": "For example, if I wanted to write the value of some variable, I could do that with console.log."
+  },
+  {
+    "name": "backspace",
+    "value": "29"
+  },
+  {
+    "name": "type-editor",
+    "value": "const myVariable = 'Important variable I want to keep track of';"
+  },
+  {
+    "name": "enter",
+    "value": "1"
+  },
+  {
+    "name": "type-editor",
+    "value": "console.log(myVariable);"
+  },
+  {
+    "name": "speak-before",
+    "value": "And that's it! We now know how to use the console.log function in JavaScript."
   }
 ]
 ```
 
-Alternatively, you can define the actions directly in TypeScript. This is useful if you want to use the editor's intellisense to help you write the actions.
+Alternatively, you can define the actions directly in TypeScript. This is useful if you want to use the editor's intellisense to help you write the actions. The only important thing to note is that you must use `export default` syntax to export the actions. The equivalent TypeScript version of the above actions file would look like this:
 
 ```ts
-export const sumActions: Array<IAction> = [
+const helloWorldActions: Array<IAction> = [
   {
-    name: 'speak-before',
-    value: 'Let\'s make a simple sum function in typescript!'
+    name: "speak-before",
+    value: "To represent that this file is 'index.js', I'll just put a comment here"
   },
   {
-    name: 'type',
-    value: '// sum.ts'
+    name: "type-editor",
+    value: "// index.js"
   },
   {
-    name: 'speak-before',
-    value: 'That\'s just a comment, but let\'s actually make a sum function.'
+    name: "speak-before",
+    value: "Then, we'll add a simple console.log statement to the file."
   },
   {
-    name: 'key-down',
-    value: '1'
+    name: "enter",
+    value: "1"
   },
   {
-    name: 'type',
-    value: 'function sum(a: number, b: number): number {'
+    name: "type-editor",
+    value: "console.log('Hello, world!');"
   },
   {
-    name: 'key-down',
-    value: '1'
+    name: "speak-before",
+    value: "For example, if I wanted to write the value of some variable, I could do that with console.log."
   },
   {
-    name: 'type',
-    value: 'return a + b;'
+    name: "backspace",
+    value: "29"
   },
   {
-    name: 'key-down',
-    value: '1'
+    name: "type-editor",
+    value: "const myVariable = 'Important variable I want to keep track of';"
   },
   {
-    name: 'type',
-    value: '}'
+    name: "enter",
+    value: "1"
   },
   {
-    name: 'key-down',
-    value: '1'
+    name: "type-editor",
+    value: "console.log(myVariable);"
   },
   {
-    name: 'type',
-    value: 'console.log(sum(1, 2));'
+    name: "speak-before",
+    value: "And that's it! We now know how to use the console.log function in JavaScript."
   }
 ]
+
+// IMPORTANT!!! You must use the export default syntax here!!!
+export default helloWorldActions
 ```
-
-## Actions
-
-### Single File Environment
-
-In a single file environment, there are a variety of actions.
-
-### GitHub Codespaces Environment
-
-Currently the following actions are supported:
-
-- `new-file` - creates a new file
-- `type-editor` - types text into the editor
-- `click-editor` - clicks on the editor
-
-Miscellaneous actions:
-- `highlight` - highlights text in the file
-- `comment` - comments out text in the file
-
-## Run examples
-
-Writing a simple hello world console.log statement:
-
-```bash
-npm run start ./examples/hello-world.json
-```
-
-Writing a sum TypeScript function:
-
-```bash
-npm run start ./examples/sum.json
-```
-
-With all the examples, you should end up with an mp4 file in the `./video` directory, and an audio file in the `./audio` directory.
 
 ## Other Commands
 
 ### `clean`
 
-This command cleans out the `./dist`, `./audio`, and `./video` directories. Be careful! If there was a lot of data, you'll have to regenerate everything again for each video made. This could get expensive if you are doing a lot of text to speech.
-
 ```bash
 npm run clean
 ```
 
+This command cleans out the `./dist`, `./audio`, and `./video` directories. 
+
+***Be careful! After running this, you'll have to regenerate everything again for each video made. This could get expensive if you are doing a lot of text to speech using a paid plan.
+
 ### `make-video`
-Just an alias for `start`;
 
 ```bash
-npm run make-video
+npm run make-video ./examples/hello-world.json
 ```
+
+Just an alias for `start`.
 
 ### `scripts-health-check`
 
-It sometimes happens that the text to speech model produces artifacts in the audio. This command will run a health check on all audio files produced by a step file by transcripting them and comparing their transcript to the original transcript using Levenshtein distance. If the transcripts are different, it will print out the file name and the transcript, and attempt to create a new audio file.
+It sometimes happens that the text to speech model produces artifacts in the audio. This command will run a health check on all audio files produced by an actions file by transcripting them and comparing their transcript to the original transcript using Levenshtein distance. If the transcripts are different, it will print out the file name and the transcript, and attempt to create a new audio file. This is most useful when using an AI generated voice, as the `say.js` library is a deterministic library and will always produce the same audio file for the same transcript.
+
+Ex. check the accuracy of your Eleven Labs audio files:
 
 ```bash
-npm run scripts-health-check ./examples/hello-world.json
+npm run scripts-health-check ./examples/hello-world.json elevenlabs
 ```
 
+Ex. check the accuracy of your OpenAI audio files:
+
+```bash
+npm run scripts-health-check ./examples/hello-world.json openai
+```
 
 ### `scripts-character-count`
 
-As is always the case with character or word based cost models, the amount of text that will be converted is always a question. This script prints out the character, word, and page count of all scripts in a given step file.
+As is always the case with character or word based cost models, the amount of text that will be converted is always a question. This script prints out the character, word, and page count of all speaking-based actions in a given actions file.
 
 ```bash
 npm run scripts-character-count ./examples/hello-world.json
 ```
-
 
 ### `code-health-check`
 
@@ -189,9 +241,15 @@ This command runs a health check of code after each `type` event, checking for a
 npm run code-health-check ./examples/hello-world.json
 ```
 
-## Desktop Automation
+## Experimental: Visual Studio Code on Desktop Automation
 
-Due to the state of `robotjs`, a few caveats are required to properly run desktop automation actions:
+Experimental: use a running instance of Visual Studio Code and `robotjs` to record in the desktop environment:
+
+```bash
+npm run visual-studio-code-driver ./examples/hello-world.json sayjs desktop
+```
+
+A few caveats are required to properly run desktop automation actions:
 
 - Need exactly one 1920x1080 monitor
-- Bug fix for key press (see implementation)
+- The desktop to the right of where you issue the above script must be an empty instance of Visual Studio Code

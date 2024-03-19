@@ -9,7 +9,11 @@
   },
   {
     "name": "speak-before",
-    "value": "Then, we'll add a simple console.log statement to the file. We'll learn in the coming lessons what the console is and how to use it."
+    "value": "Then, we'll add a simple console.log statement to the file."
+  },
+  {
+    "name": "enter",
+    "value": "1"
   },
   {
     "name": "type-editor",
@@ -34,5 +38,9 @@
   {
     "name": "type-editor",
     "value": "console.log(myVariable);"
+  },
+  {
+    "name": "speak-before",
+    "value": "And that's it! We now know how to use the console.log function in JavaScript."
   }
 ]

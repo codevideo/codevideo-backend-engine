@@ -1,6 +1,6 @@
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 
-export const fibonacciActions: Array<IAction> = [
+const fibonacciActions: Array<IAction> = [
   {
     name: "speak-before",
     value:
@@ -92,3 +92,5 @@ export const fibonacciActions: Array<IAction> = [
       "Here, we've introduced a 'memo' object to store previously calculated Fibonacci values. This reduces redundant calculations and improves the efficiency of our function. Great! We've successfully created a Fibonacci calculation function in TypeScript using a recursive approach with memoization. Until next time - cheers!",
   },
 ];
+
+export default fibonacciActions;

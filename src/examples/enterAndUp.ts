@@ -1,6 +1,6 @@
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 
-export const enterAndUpActions: Array<IAction> = [
+const enterAndUpActions: Array<IAction> = [
   {
     name: "enter",
     value:
@@ -30,6 +30,7 @@ export const enterAndUpActions: Array<IAction> = [
     name: "arrow-up",
     value:
       "1",
-  },
-  
+  }
 ];
+
+export default enterAndUpActions;

@@ -1,6 +1,6 @@
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 
-export const sumActions: Array<IAction> = [
+const sumActions: Array<IAction> = [
   {
     name: "speak-before",
     value:
@@ -75,3 +75,5 @@ export const sumActions: Array<IAction> = [
     value: "And that's it! We've created a simple sum function in TypeScript. Congrats!",
   },
 ];
+
+export default sumActions;

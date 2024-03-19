@@ -5,12 +5,13 @@ import { levenshteinDistance } from "./utils/levenshteinDistance";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio";
 import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
 import { sha256Hash } from "./utils/sha256Hash";
+import { TextToSpeechOptions } from "./types/TextToSpeechOptions";
 
 const distanceThreshold = 0;
 
 const scriptsHealthCheck = async () => {
   // load in the actions file
-  const { actions, actionsAudioDirectory } = loadActions('typescript');
+  const { actions, actionsAudioDirectory, textToSpeechOption } = loadActions();
 
   // for each script, generate the transcript with OpenAI whisper, 
   // then compare the original text with the resulting transcript using levenshtein distance
@@ -19,7 +20,7 @@ const scriptsHealthCheck = async () => {
     const action = actions[i];
 
     if (isSpeakAction(action)) {
-      await checkForArtifacts(textHash, action, actionsAudioDirectory);
+      await checkForArtifacts(textHash, action, actionsAudioDirectory, textToSpeechOption);
     }
   }
 };
@@ -27,7 +28,8 @@ const scriptsHealthCheck = async () => {
 const checkForArtifacts = async (
   textHash: string,
   action: IAction,
-  stepsAudioPath: string
+  stepsAudioPath: string,
+  textToSpeechOption: TextToSpeechOptions
 ) => {
   // generate transcript
   const textToSpeak = action.value;
@@ -52,7 +54,7 @@ const checkForArtifacts = async (
     // and regenerate the audio for this step
     console.log(`Regenerating audio for step ${textHash}...`);
     if (isSpeakAction(action)) {
-      await convertSpeakActionsToAudio([action], stepsAudioPath, true);
+      await convertSpeakActionsToAudio([action], stepsAudioPath, true, textToSpeechOption);
     }
   } else {
     console.log(

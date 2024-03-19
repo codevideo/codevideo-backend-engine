@@ -18,7 +18,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@fullstackcraftllc/codevideo-types": "^1.0.8",
+    "@fullstackcraftllc/codevideo-types": "^1.2.1",
     "@fullstackcraftllc/syntax-spy": "^1.0.4",
     "@fullstackcraftllc/virtual-code-block": "^1.1.0",
     "fluent-ffmpeg": "^2.1.2",

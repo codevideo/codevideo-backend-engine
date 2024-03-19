@@ -5,7 +5,7 @@ import { VirtualCodeBlock } from "@fullstackcraftllc/virtual-code-block";
 
 const codeHealthCheck = async () => {
   // load in the steps.json file
-  const { actions } = loadActions("typescript");
+  const { actions } = loadActions();
 
   // get code actions
   const codeActions = convertActionsToCodeActions(actions);

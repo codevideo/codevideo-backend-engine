@@ -1,6 +1,6 @@
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 
-export const enumExtensionsActions: Array<IAction> = [
+const enumExtensionsActions: Array<IAction> = [
   {
     name: "speak-before",
     value:
@@ -145,3 +145,5 @@ export const enumExtensionsActions: Array<IAction> = [
       "And that's it! We've successfully created two helpful enum extensions. Happy coding!",
   },
 ];
+
+export default enumExtensionsActions;

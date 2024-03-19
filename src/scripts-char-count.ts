@@ -3,7 +3,7 @@ import { loadActions } from "./io/loadActions";
 
 const scriptChartCount = () => {
   // load in the steps.json file
-  const { actions } = loadActions('typescript');
+  const { actions } = loadActions();
 
   const speakActions = convertActionsToSpeakActions(actions);
 

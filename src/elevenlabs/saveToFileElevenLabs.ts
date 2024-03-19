@@ -74,13 +74,10 @@ export const saveToFileElevenLabs = async (filename: string, textToSpeak: string
 
     // write the file with fs
     fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(`Script for step ${filename} converted to audio with Eleven Labs.`);
   } catch (error) {
     console.error(error);
-    // handle error appropriately
     return null;
   }
 }
-
-// Example usage:
-// const result = await textToSpeech("Hello, this is a test");
-// console.log(result);

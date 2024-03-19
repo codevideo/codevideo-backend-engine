@@ -50,6 +50,8 @@ export const saveToFileOpenAI = async (
 
     // write the file with fs
     fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(`Script for step ${filename} converted to audio with Open AI.`);
   } catch (error) {
     console.error(error);
   }

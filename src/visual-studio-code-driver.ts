@@ -9,10 +9,10 @@ import { exec, ChildProcess } from "child_process";
 // uncomment proper screen size as needed
 
 // standard 16:9 screen dimensions
-const screenDimensions = { width: 1920, height: 1080 };
+// const screenDimensions = { width: 1920, height: 1080 };
 
 // 2019 macbook pro 16" screen dimensions
-// const screenDimensions = { width: 2880, height: 1800 };
+const screenDimensions = { width: 2880, height: 1800 };
 
 // characters per minute
 const cpm = 500;
