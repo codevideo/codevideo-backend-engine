@@ -7,7 +7,7 @@ Create shockingly realistic automated software videos!
 Clone this repository and install the dependencies:
 
 ```bash
-git clone 
+git clone https://github.com/codevideo/codevideo-ai.git
 ```
 
 Install dependencies:
