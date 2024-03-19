@@ -10,19 +10,25 @@ Clone this repository and install the dependencies:
 git clone https://github.com/codevideo/codevideo-ai.git
 ```
 
+Move into the repo:
+
+```bash
+cd codevideo-ai
+```
+
 Install dependencies:
 
 ```bash
 npm install
 ```
 
-Run the simple hello world example (explains how to use the console.log function in JavaScript):
+Run the simple hello world example (creates a video on how to use the console.log function in JavaScript):
 
 ```bash
 npm run start ./examples/hello-world.json
 ```
 
-Along with some logging to the console on what is going on, a Chrome browser will open, and you will see the puppeteer automation of the Monaco editor begin.
+Along with some logging to the console on what is going on, a Chrome browser will open, and you will see the puppeteer automation of the Monaco editor begin. Let it run! There are some time consuming steps at the end but it will eventually finish and you will have your video in the `./video` directory.
 
 This will generate a variety of files:
 
