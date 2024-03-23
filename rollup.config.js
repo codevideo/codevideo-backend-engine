@@ -5,19 +5,13 @@ import resolve from "@rollup/plugin-node-resolve";
 import json from "@rollup/plugin-json";
 
 export default [
-  // output both CommonJS and ES module
+  // output ES module
   {
     input: "src/index.ts",
-    output: [
-      {
-        dir: "dist",
-        format: "es",
-      },
-      {
-        dir: "dist",
-        format: "cjs",
-      }
-    ],
+    output: {
+      dir: "dist",
+      format: "es",
+    },
     plugins: [
       resolve(), // resolve node_modules
       commonjs(), // convert CommonJS to ES modules

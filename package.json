@@ -1,13 +1,12 @@
 {
   "name": "@fullstackcraftllc/codevideo-backend-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Create shockingly realistic automated software videos! The backend / CLI tool from CodeVideo to create videos.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    "import": "./dist/index.js",
-    "require": "./dist/index.cjs"
+    "import": "./dist/index.js"
   },
   "scripts": {
     "build": "rollup -c ./rollup.config.js",
