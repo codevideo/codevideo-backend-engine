@@ -1,17 +1,17 @@
-import { preprocessStringForComparison } from "./utils/preprocessStringForComparison";
-import { loadActions } from "./io/loadActions";
-import { speechToText } from "./openai/speechToText";
-import { levenshteinDistance } from "./utils/levenshteinDistance";
-import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio";
 import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
-import { sha256Hash } from "./utils/sha256Hash";
-import { TextToSpeechOptions } from "./types/TextToSpeechOptions";
+import { preprocessStringForComparison } from "../utils/preprocessStringForComparison.js";
+import { loadActions } from "../io/loadActions.js";
+import { speechToText } from "../openai/speechToText.js";
+import { levenshteinDistance } from "../utils/levenshteinDistance.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 
 const distanceThreshold = 0;
 
 const scriptsHealthCheck = async () => {
   // load in the actions file
-  const { actions, actionsAudioDirectory, textToSpeechOption } = loadActions();
+  const { actions, actionsAudioDirectory, textToSpeechOption } = await loadActions();
 
   // for each script, generate the transcript with OpenAI whisper, 
   // then compare the original text with the resulting transcript using levenshtein distance

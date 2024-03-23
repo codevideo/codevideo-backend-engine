@@ -1,9 +1,9 @@
-import { TextToSpeechOptions } from "./../types/TextToSpeechOptions";
-import { saveToFileSay } from "../say/saveToFileSay";
-import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs";
-import { sha256Hash } from "../utils/sha256Hash";
-import { saveToFileOpenAI } from "../openai/saveToFileOpenAI";
 import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
+import { TextToSpeechOptions } from "./../types/TextToSpeechOptions.js";
+import { saveToFileSay } from "../say/saveToFileSay.js";
+import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { saveToFileOpenAI } from "../openai/saveToFileOpenAI.js";
 
 // loop over each step, converting "script" property to audio with say
 export const convertSpeakActionsToAudio = async (

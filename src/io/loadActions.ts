@@ -1,17 +1,17 @@
-import { TextToSpeechOptions } from './../types/TextToSpeechOptions';
+import { TextToSpeechOptions } from './../types/TextToSpeechOptions.js';
 import path from "path";
 import fs from "fs";
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 
-export const loadActions = (): {
+export const loadActions = async (): Promise<{
   url: string;
   actions: Array<IAction>;
-  fileNameWithoutExtension: string;
+  videoFile: string;
   currentWorkingDirectory: string;
   actionsAudioDirectory: string;
   actionsVideoDirectory: string;
   textToSpeechOption: TextToSpeechOptions
-} => {
+}> => {
   // first argument to this script is the path to the actions file
   if (process.argv.length < 3) {
     console.error("Please provide a path to the actions file");
@@ -57,7 +57,7 @@ export const loadActions = (): {
     actions.push(...typeScriptActions);
   } else if (inputStepsFilePath.endsWith(".json")) {
     // we can safely require the actions file
-    const jsonActions = require(actionsFilePath) as Array<IAction>;
+    const {default: jsonActions} = await import(actionsFilePath, { assert: { type: "json" } });
     actions.push(...jsonActions);
   } else {
     console.error(
@@ -79,12 +79,13 @@ export const loadActions = (): {
   // if (actions.map((a) => a.name).includes("type-terminal")) {
   //   url = `https://prod.liveshare.vsengsaas.visualstudio.com/join?049AB4AD9BC16BE338A13263281272C72C49`;
   // }
+  const videoFile = `./video/${fileNameWithoutExtension}.mp4`;
 
   return {
     url,
     actions,
     currentWorkingDirectory,
-    fileNameWithoutExtension,
+    videoFile,
     actionsAudioDirectory,
     actionsVideoDirectory,
     textToSpeechOption

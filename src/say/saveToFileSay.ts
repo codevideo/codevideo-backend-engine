@@ -1,6 +1,6 @@
 import say from "say";
 import fs from "fs";
-import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav.js";
 
 export const saveToFileSay = async (
   id: string,

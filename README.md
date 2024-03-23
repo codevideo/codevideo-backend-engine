@@ -2,7 +2,37 @@
 
 Create shockingly realistic automated software videos!
 
-## Quick Start
+## Quick Start - Programmatic Usage
+
+Install this package:
+
+```bash
+npm install @fullstackcraft/codevideo-backend-engine
+```
+
+Use it in your project!
+
+```typescript
+import { generateVideoFromActions } from '@fullstackcraft/codevideo-backend-engine'
+import { IAction } from '@fullstackcraft/codevideo-backend-engine/dist/types'
+
+const actions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value: "I'm gonna type some code!"
+  },
+  {
+    name: "type-editor",
+    value: "console.log('Hello, world!');"
+  },
+]
+
+
+// video is of type Buffer, mp4 format
+const video = generateVideoFromActions(actions)
+```
+
+## Quick Start - CLI Usage
 
 Clone this repository and install the dependencies:
 
@@ -28,7 +58,7 @@ Run the simple hello world example (creates a video on how to use the console.lo
 npm run start ./examples/hello-world.json
 ```
 
-Along with some logging to the console on what is going on, a Chrome browser will open, and you will see the puppeteer automation of the Monaco editor begin. Let it run! There are some time consuming steps at the end but it will eventually finish and you will have your video in the `./video` directory.
+Let it run & have faith! A headless chrome browser is running in the background, creating your video. As long as you don't see errors on your console it will eventually finish and you will have your video in the `./video` directory.
 
 This will generate a variety of files:
 
@@ -60,7 +90,7 @@ You can use say.js for free, but this will be a very robotic sounding voice.
 
 Currently, we support the following AI voices:
 
-- Eleven Labs* (including a custom studio voices)
+- Eleven Labs (including custom cloned voices*)
 - OpenAI TTS (text-to-speech) 
 
 *For inspiration on what to record to train a voice for Eleven Labs, we recommend recording yourself reading blog posts or other text that you find interesting - we had great results with just 45 minutes of recorded audio, when the 'optimum' amount recommended by Eleven Labs is supposed to be 3 hours or more.
@@ -141,7 +171,7 @@ Here is an example of an action file, the very same one used to drive the hello-
 ]
 ```
 
-Alternatively, you can define the actions directly in TypeScript. This is useful if you want to use the editor's intellisense to help you write the actions. The only important thing to note is that you must use `export default` syntax to export the actions. The equivalent TypeScript version of the above actions file would look like this:
+Alternatively, you can define the actions directly in TypeScript. This is useful if you want to use the editor's Copilot / ChatGPT / intellisense to help you write the actions. The only important thing to note is that you must use `export default` syntax to export the actions. The equivalent TypeScript version of the above actions file would look like this:
 
 ```ts
 const helloWorldActions: Array<IAction> = [
@@ -259,3 +289,8 @@ A few caveats are required to properly run desktop automation actions:
 
 - Need exactly one 1920x1080 monitor
 - The desktop to the right of where you issue the above script must be an empty instance of Visual Studio Code
+
+
+## Patches!
+
+Due to an ugly bug with `fluent-ffmpeg`, which is used by `puppeteer-screen-recorder`, the `fluent-ffmpeg` library has been patched with `patch-package`. For those interested, the patch is in `./patches/fluent-ffmpeg+2.1.2.patch`.

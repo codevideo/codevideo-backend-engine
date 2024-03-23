@@ -1,5 +1,5 @@
-import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs";
-import { sha256Hash } from "./sha256Hash";
+import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
+import { sha256Hash } from "./sha256Hash.js";
 import sound from "sound-play";
 
 export const speakAsClonedVoice = async (text: string) => {

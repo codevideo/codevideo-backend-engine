@@ -1,8 +1,8 @@
 import * as robot from "robotjs";
-import { findFileWithCharacters } from "./utils/findFileWIthCharacters";
-import { findTextCoordinatesFromImage } from "./utils/findTextCoordinatesFromImage";
-import { speakAsClonedVoice } from "./utils/speakAsClonedVoice";
-import { wait } from "./utils/wait";
+import { findFileWithCharacters } from "./utils/findFileWIthCharacters.js";
+import { findTextCoordinatesFromImage } from "./utils/findTextCoordinatesFromImage.js";
+import { speakAsClonedVoice } from "./utils/speakAsClonedVoice.js";
+import { wait } from "./utils/wait.js";
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 import { exec, ChildProcess } from "child_process";
 

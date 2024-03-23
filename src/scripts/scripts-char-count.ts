@@ -1,9 +1,9 @@
 import { convertActionsToSpeakActions } from "@fullstackcraftllc/codevideo-types";
-import { loadActions } from "./io/loadActions";
+import { loadActions } from "../io/loadActions.js";
 
-const scriptChartCount = () => {
+const scriptChartCount = async () => {
   // load in the steps.json file
-  const { actions } = loadActions();
+  const { actions } = await loadActions();
 
   const speakActions = convertActionsToSpeakActions(actions);
 
