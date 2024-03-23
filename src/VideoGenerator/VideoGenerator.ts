@@ -8,8 +8,6 @@ import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAu
 import { loadActions } from "../io/loadActions.js";
 import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
-
-// const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
 
 export class VideoGenerator {

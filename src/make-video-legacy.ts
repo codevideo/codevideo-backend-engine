@@ -6,7 +6,6 @@ import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAud
 import { buildAudioFile } from "./audio/buildAudioFile.js";
 import { loadActions } from "./io/loadActions.js";
 import { sha256Hash } from "./utils/sha256Hash.js";
-// const { PuppeteerScreenRecorder } = require("puppeteer-screen-recorder");
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
 
 let trueAudioStartTime = 0;

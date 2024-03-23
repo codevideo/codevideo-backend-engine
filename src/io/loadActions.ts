@@ -43,8 +43,7 @@ export const loadActions = async (): Promise<{
   // try typescript first
   if (inputStepsFilePath.endsWith(".ts")) {
     // dynamically require the typescript file
-    const typeScriptActions = require(actionsFilePath)
-      .default as Array<IAction>;
+    const {default: typeScriptActions} = await import(actionsFilePath);
 
     // if it's null, throw error that they need to use 'export default' syntax
     if (typeScriptActions === null) {

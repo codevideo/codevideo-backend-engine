@@ -250,9 +250,8 @@ export const executeActionsWithVisualStudioCodeDesktop = async (
 const run = async () => {
   const filename = `~/Movies/CodeVideo_Recording${Date.now()}.mov`;
   await prepareDesktopForRecording(filename);
-  const actions =
-    require("../examples/visual-studio-code-console-log.json") as Array<IAction>;
-  await executeActionsWithVisualStudioCodeDesktop(actions);
+  const {default: actions} = await import("../examples/visual-studio-code-console-log.json", { assert: { type: "json" } });
+  await executeActionsWithVisualStudioCodeDesktop(actions as Array<IAction>);
   await tearDownRecording();
 };
 
