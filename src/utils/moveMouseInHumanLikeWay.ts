@@ -1,5 +1,4 @@
-import * as robot from "robotjs";
-import { IPoint } from "@fullstackcraftllc/codevideo-types";
+import { mouse, Point, straightTo } from "@nut-tree/nut-js";
 
 type BezierCurveType =
   | "arc-above"
@@ -8,14 +7,14 @@ type BezierCurveType =
   | "arc-right"
   | "straight-line";
 
-export const moveMouseInHumanLikeWay = (
-  startPoint: IPoint,
-  endPoint: IPoint,
+export const moveMouseInHumanLikeWay = async (
+  startPoint: Point,
+  endPoint: Point,
   curveType: BezierCurveType,
   jitter: boolean = false
 ) => {
   // Speed up the mouse.
-  robot.setMouseDelay(2);
+  mouse.config.mouseSpeed = 20; // pixels per second
 
   if (curveType === "straight-line") {
     // Move the mouse in a straight line.
@@ -34,19 +33,19 @@ export const moveMouseInHumanLikeWay = (
 
         x += deltaX;
         y += deltaY;
-        robot.moveMouse(x, y);
+        await straightTo(new Point(x, y));
 
         // Compensate by applying the opposite adjustment after each jitter.
         x -= deltaX;
         y -= deltaY;
-        robot.moveMouse(x, y);
+        await straightTo(new Point(x, y));
       }
     }
     return;
   }
 
   // Calculate the control point for the bezier curve based on the curveType.
-  let controlPoint: IPoint;
+  let controlPoint: Point;
   if (curveType === "arc-above" || curveType === "arc-below") {
     controlPoint = { x: (startPoint.x + endPoint.x) / 2, y: startPoint.y };
   } else if (curveType === "arc-left" || curveType === "arc-right") {
@@ -59,7 +58,7 @@ export const moveMouseInHumanLikeWay = (
   }
 
   // Calculate the bezier curve points.
-  const bezierCurvePoints: IPoint[] = [];
+  const bezierCurvePoints: Point[] = [];
   for (let t = 0; t <= 1; t += 0.01) {
     let x =
       Math.pow(1 - t, 2) * startPoint.x +
@@ -86,15 +85,14 @@ export const moveMouseInHumanLikeWay = (
     }
   }
 
-  // Move the mouse along the bezier curve.
-  for (const point of bezierCurvePoints) {
-    robot.moveMouse(point.x, point.y);
-  }
+  // Move the mouse along the bezier curve points
+
+  await mouse.move(bezierCurvePoints);
 };
 
 // Example usage:
-const startPoint: IPoint = { x: 100, y: 100 };
-const endPoint: IPoint = { x: 500, y: 400 };
+const startPoint: Point = new Point(100, 100);
+const endPoint: Point = new Point(500, 400);
 const curveType: BezierCurveType = "straight-line";
 const jitter: boolean = true;
 

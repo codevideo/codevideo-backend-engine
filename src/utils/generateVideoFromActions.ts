@@ -21,7 +21,11 @@ export const generateVideoFromActions = async (actions: Array<IAction>): Promise
   const fileNameWithoutExtension = "tmp";
   const currentWorkingDirectory = process.cwd();
   const textToSpeechOption = "sayjs";
-  const editorUrl = `file://${currentWorkingDirectory}/editor.html`;
+
+  // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
+  // TODO: this will now break local usages, we'll make a better solution for this later
+  const directoryOfPackageDistItself = `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;
+  const editorUrl = `file://${directoryOfPackageDistItself}/editor.html`;
 
   // create all folders as needed if they don't exist
   fs.mkdirSync(`${currentWorkingDirectory}/tmp`, { recursive: true });

@@ -1,10 +1,10 @@
-import * as robot from "robotjs";
+import { Button, Key, keyboard, mouse, Point, straightTo } from "@nut-tree/nut-js";
 import { findFileWithCharacters } from "./utils/findFileWIthCharacters.js";
 import { findTextCoordinatesFromImage } from "./utils/findTextCoordinatesFromImage.js";
 import { speakAsClonedVoice } from "./utils/speakAsClonedVoice.js";
 import { wait } from "./utils/wait.js";
 import { IAction } from "@fullstackcraftllc/codevideo-types";
-import { exec, ChildProcess } from "child_process";
+import { exec } from "child_process";
 
 // uncomment proper screen size as needed
 
@@ -17,25 +17,25 @@ const screenDimensions = { width: 2880, height: 1800 };
 // characters per minute
 const cpm = 500;
 
-const centerPoint = {
-  x: screenDimensions.width / 2,
-  y: screenDimensions.height / 2,
-};
-const upperThirdCenter = {
-  x: screenDimensions.width / 2,
-  y: screenDimensions.height / 3,
-};
-const bottomThirdCenter = {
-  x: screenDimensions.width / 2,
-  y: (screenDimensions.height / 3) * 2,
-};
+const centerPoint = new Point(
+  screenDimensions.width / 2,
+  screenDimensions.height / 2
+);
+const upperThirdCenter = new Point(
+  screenDimensions.width / 2,
+  screenDimensions.height / 3,
+)
+const bottomThirdCenter = new Point(
+  screenDimensions.width / 2,
+  (screenDimensions.height / 3) * 2
+)
 
 // robotjs bug fix function
-const keyTap = (key: string = "", modifiers: Array<string> = []) => {
-  robot.keyToggle(key, "down", modifiers);
-  robot.keyToggle(key, "up", modifiers); // Let up modifier keys in same way they were pressed
-  modifiers.forEach((mod) => robot.keyToggle(mod, "up")); // Double check they are up
-};
+// const keyTap = (key: string = "", modifiers: Array<string> = []) => {
+//   keyToggle(key, "down", modifiers);
+//   keyToggle(key, "up", modifiers); // Let up modifier keys in same way they were pressed
+//   modifiers.forEach((mod) => keyToggle(mod, "up")); // Double check they are up
+// };
 
 // Function to start QuickTime screen recording
 const startScreenRecording = async (filename: string) => {
@@ -97,12 +97,13 @@ const moveToLeftDesktop = async () => {
 const moveMouseToCenterOfScreen = async () => {
   console.log("Moving mouse to center of screen");
   // move the mouse to the center of the 1920x1080 screen
-  robot.moveMouseSmooth(centerPoint.x, centerPoint.y, 2);
+  await straightTo(centerPoint);
 };
 
 const clickVSCodeFileByName = async (fileName: string) => {
   // issue command shift 3 to take a screenshot
-  keyTap("3", ["command", "shift"]);
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
 
   // wait a bit for the screenshot to be taken and find coordinates of text and everything
   await wait(2000);
@@ -142,24 +143,25 @@ const clickVSCodeFileByName = async (fileName: string) => {
 
   // move to the file
   // await moveMouseInHumanLikeWay(centerPoint, filePoint, "arc-above", false);
-  robot.moveMouseSmooth(filePoint.x + 100, filePoint.y, 1);
+  const point = new Point(filePoint.x+100, filePoint.y);
+  await straightTo(point);
 
   // wait a bit to move to the file
   await wait(1000);
 
   // click to open the file
-  robot.mouseClick();
+  await mouse.click(Button.LEFT);
 
   // wait a bit for the file to open
   await wait(1000);
 };
 
 const moveUpperThirdCenter = async () => {
-  robot.moveMouseSmooth(upperThirdCenter.x, upperThirdCenter.y, 2);
+  await straightTo(new Point(upperThirdCenter.x, upperThirdCenter.y));
 };
 
 const moveBottomThirdCenter = async () => {
-  robot.moveMouseSmooth(bottomThirdCenter.x, bottomThirdCenter.y, 2);
+  await straightTo(new Point(bottomThirdCenter.x, bottomThirdCenter.y));
 };
 
 const prepareDesktopForRecording = async (
@@ -176,7 +178,7 @@ const prepareDesktopForRecording = async (
   await moveMouseToCenterOfScreen();
 
   // click to ensure screen is in focus
-  robot.mouseClick();
+  await mouse.click(Button.LEFT);
 
   console.log("Desktop successfully prepared for recording");
 };
@@ -205,9 +207,7 @@ export const executeActionsWithVisualStudioCodeDesktop = async (
         await speakAsClonedVoice(action.value);
         break;
       case "type-editor":
-        robot.typeStringDelayed(action.value, cpm);
-        // await based on the cpm and the length of the string
-        await wait((characters / cpm) * 60);
+        await keyboard.type(action.value);
         break;
       case "click-editor":
         // click somewhere near the top of the editor to make sure we can type in it
@@ -215,30 +215,29 @@ export const executeActionsWithVisualStudioCodeDesktop = async (
         // wait a bit for mouse to move
         await wait(1000);
         // click in the file!
-        robot.mouseClick();
+        await mouse.click(Button.LEFT);
         break;
       case "click-terminal":
         await moveBottomThirdCenter();
         await wait(1000);
-        robot.mouseClick();
+        await mouse.click(Button.LEFT);
         break;
       case "type-terminal":
-        robot.typeStringDelayed(action.value, cpm);
-        await wait((characters / cpm) * 60);
+        await keyboard.type(action.value);
         break;
       case "click-filename":
         await clickVSCodeFileByName(action.value);
         break;
       case "open-terminal":
-        keyTap("`", ["control", "shift"]);
+        await keyboard.pressKey(Key.LeftControl, Key.LeftShift, Key.Grave);
         // wait a bit to let the terminal open
         await wait(3000);
         break;
       case "save":
-        keyTap("s", ["command"]);
+        await keyboard.pressKey(Key.LeftCmd, Key.S)
         break;
       case "enter":
-        keyTap("enter");
+        await keyboard.pressKey(Key.Enter);
         break;
       default:
         console.log(`Action ${action.name} not found`);
