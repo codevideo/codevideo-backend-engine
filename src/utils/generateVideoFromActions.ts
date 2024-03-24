@@ -28,13 +28,14 @@ export const generateVideoFromActions = async (actions: Array<IAction>): Promise
   fs.mkdirSync(`${currentWorkingDirectory}/tmp/video`, { recursive: true });
   fs.mkdirSync(`${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`, { recursive: true });
 
-  const actionsAudioDirectory = `${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`;
+  const audioDirectory = `${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`;
+  const videoDirectory = `${currentWorkingDirectory}/tmp/video`;
   const videoFile = `${currentWorkingDirectory}/tmp/video/${fileNameWithoutExtension}.mp4`;
 
   // first convert scripts to audio
   const audioFiles = await convertSpeakActionsToAudio(
     actions,
-    actionsAudioDirectory,
+    audioDirectory,
     false,
     textToSpeechOption
   );
@@ -44,14 +45,14 @@ export const generateVideoFromActions = async (actions: Array<IAction>): Promise
     editorUrl,
     videoFile,
     actions,
-    actionsAudioDirectory
+    audioDirectory
   );
 
   // now that we have the offset delays for each audio, build the audio file
-  await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+  await buildAudioFile(audioDirectory, audioFiles, audioStartTimes);
 
   // then combine the audio and video files
-  await addAudioToVideo(videoFile, actionsAudioDirectory);
+  await addAudioToVideo(videoDirectory, videoFile, audioDirectory);
 
   // finally load the video and return it as a buffer
   return fs.promises.readFile(videoFile);

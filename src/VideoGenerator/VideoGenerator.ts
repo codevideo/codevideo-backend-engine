@@ -177,7 +177,9 @@ export class VideoGenerator {
     );
 
     // then combine the audio and video files
-    await addAudioToVideo(this.videoFile, this.actionsAudioDirectory);
+    // TODO: quick fix for videoDirectory is the videoFile without the file name
+    const videoDirectory = this.videoFile.replace(/\/[^/]+$/, "");
+    await addAudioToVideo(videoDirectory, this.videoFile, this.actionsAudioDirectory);
   };
 
   getVideoAsBuffer = async () => {

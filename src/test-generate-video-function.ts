@@ -12,6 +12,10 @@ const main = async () => {
       name: "type-editor",
       value: "Hello, world!",
     },
+    {
+      name: "speak-before",
+      value: "Yeah, I'm pretty much awesome.",
+    },
   ];
 
   const video = await generateVideoFromActions(actions);
