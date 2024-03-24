@@ -3,7 +3,9 @@
 _Any sufficiently advanced technology is indistinguishable from magic._ 😉
 
 ![NPM Version](https://img.shields.io/npm/v/@fullstackcraftllc/codevideo-backend-engine)
-![Code Quality](https://img.shields.io/badge/Code_Quality-Badass-blue)
+![Code Quality](https://img.shields.io/badge/Code_Quality-Spaghetti-blue)
+![Code Coverage](https://img.shields.io/badge/Code_Quality-Minimal-blue)
+![Moral](https://img.shields.io/badge/Code_Quality-High-blue)
 ![Tool Abilities](https://img.shields.io/badge/Tool_Abilities-Insane-blue)
 
 Create shockingly realistic automated software videos!

@@ -15,8 +15,21 @@ import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
 
 // using series of functions
 export const generateVideoFromActions = async (actions: Array<IAction>): Promise<Buffer> => {
-  const { url, videoFile, actionsAudioDirectory, textToSpeechOption } =
-    await loadActions();
+  // const { url, videoFile, actionsAudioDirectory, textToSpeechOption } =
+  //   await loadActions();
+
+  const fileNameWithoutExtension = "tmp";
+  const currentWorkingDirectory = process.cwd();
+  const textToSpeechOption = "sayjs";
+  const editorUrl = `file://${currentWorkingDirectory}/editor.html`;
+
+  // create all folders as needed if they don't exist
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp`, { recursive: true });
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp/video`, { recursive: true });
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`, { recursive: true });
+
+  const actionsAudioDirectory = `${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`;
+  const videoFile = `${currentWorkingDirectory}/tmp/video/${fileNameWithoutExtension}.mp4`;
 
   // first convert scripts to audio
   const audioFiles = await convertSpeakActionsToAudio(
@@ -28,7 +41,7 @@ export const generateVideoFromActions = async (actions: Array<IAction>): Promise
 
   // then run the puppeteer automation, which records the video and returns the start times of each audio
   const audioStartTimes = await runPuppeteerAutomation(
-    url,
+    editorUrl,
     videoFile,
     actions,
     actionsAudioDirectory

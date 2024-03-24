@@ -8,6 +8,7 @@ export const saveToFileSay = async (
   audioFolderPath: string,
   forceOverwrite: boolean
 ) => {
+  console.log(`Writing audio file to ${audioFolderPath}`)
   return new Promise<void>((resolve, reject) => {
     const filePath = `${audioFolderPath}/${id}.mp3`;
     if (fs.existsSync(filePath) && !forceOverwrite) {

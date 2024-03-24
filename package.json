@@ -1,6 +1,6 @@
 {
   "name": "@fullstackcraftllc/codevideo-backend-engine",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Create shockingly realistic automated software videos! The backend / CLI tool from CodeVideo to create videos.",
   "type": "module",
   "main": "dist/index.js",
@@ -19,7 +19,8 @@
     "scripts-char-count": "tsc && node ./dist/scripts/scripts-char-count.js",
     "scripts-health-check": "tsc && node ./dist/scripts/scripts-health-check.js",
     "code-health-check": "tsc && node ./dist/scripts/code-health-check.js",
-    "visual-studio-code-driver": "tsc && node ./dist/visual-studio-code-driver.js"
+    "visual-studio-code-driver": "tsc && node ./dist/visual-studio-code-driver.js",
+    "test-generate-video-function": "tsc && node ./dist/test-generate-video-function.js"
   },
   "keywords": [
     "codevideo",
