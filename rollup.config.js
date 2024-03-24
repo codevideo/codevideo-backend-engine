@@ -1,6 +1,7 @@
 import typescript from "rollup-plugin-typescript2";
 import dts from "rollup-plugin-dts";
 import del from "rollup-plugin-delete";
+import copy from 'rollup-plugin-copy';
 
 export default [
   // standard package
@@ -12,7 +13,13 @@ export default [
     },
     plugins: [
       typescript(), 
-      del({ targets: "dist/*" })
+      del({ targets: "dist/*" }),
+      copy({
+        targets: [
+          // Specify the file you want to copy and where you want to copy it
+          { src: './src/monaco-localhost-single-file-editor/editor.html', dest: 'dist' }
+        ]
+      })
     ],
     external: [
       "fs",
