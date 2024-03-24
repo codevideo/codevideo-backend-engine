@@ -1,4 +1,10 @@
-# CodeVideo AI
+# CodeVideo Backend Engine
+
+_Any sufficiently advanced technology is indistinguishable from magic._ 😉
+
+![NPM Version](https://img.shields.io/npm/v/@fullstackcraftllc/codevideo-backend-engine)
+![Code Quality](https://img.shields.io/badge/Code_Quality-Badass-blue)
+![Tool Abilities](https://img.shields.io/badge/Tool_Abilities-Insane-blue)
 
 Create shockingly realistic automated software videos!
 
@@ -13,6 +19,7 @@ npm install @fullstackcraft/codevideo-backend-engine
 Use it in your project!
 
 ```typescript
+import fs from 'fs'
 import { generateVideoFromActions } from '@fullstackcraft/codevideo-backend-engine'
 import { IAction } from '@fullstackcraft/codevideo-backend-engine/dist/types'
 
@@ -28,13 +35,16 @@ const actions: Array<IAction> = [
 ]
 
 
-// video is of type Buffer, mp4 format
+// 'video' is a Buffer representing an mp4 video
 const video = generateVideoFromActions(actions)
+
+// for example, save the video to a file
+fs.writeFileSync('hello-world.mp4', video)
 ```
 
 ## Quick Start - CLI Usage
 
-Clone this repository and install the dependencies:
+Clone this repository:
 
 ```bash
 git clone https://github.com/codevideo/codevideo-ai.git
@@ -58,15 +68,15 @@ Run the simple hello world example (creates a video on how to use the console.lo
 npm run start ./examples/hello-world.json
 ```
 
-Let it run & have faith! A headless chrome browser is running in the background, creating your video. As long as you don't see errors on your console it will eventually finish and you will have your video in the `./video` directory.
+Let it run & have faith! A headless chrome browser is running in the background, creating your video. As long as you don't see errors on your console it will eventually finish and the video will be pop out in the `./video` directory.
 
-This will generate a variety of files:
+There will be a variety of files created:
 
 - `./audio/*.mp3` - the various speaking action audio files (generated before the video is made)
 - `./audio/hello-world/combined.mp3` - the properly spaced speaking action audios combined and used to interleave into the editor video
 - `./video/hello-world.mp4` - the final video with typing animation and audio
 
-That's it! Create any automation you want by creating a new actions file and passing it to the `start` command.
+That's it! Create any automation you want by creating a new actions (either `.json` or `.ts`) and passing it to the `start` command. See the [defining actions section](#defining-actions) below for more information.
 
 ## Other Examples
 
@@ -224,6 +234,8 @@ const helloWorldActions: Array<IAction> = [
 // IMPORTANT!!! You must use the export default syntax here!!!
 export default helloWorldActions
 ```
+
+To see a list of all available actions, see the [action names as string directly in the codevideo-types repo](https://github.com/codevideo/codevideo-types/blob/main/src/constants/AllActionStrings.ts).
 
 ## Other Commands
 

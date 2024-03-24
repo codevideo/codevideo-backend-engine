@@ -1,6 +1,6 @@
 {
   "name": "@fullstackcraftllc/codevideo-backend-engine",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Create shockingly realistic automated software videos! The backend / CLI tool from CodeVideo to create videos.",
   "type": "module",
   "main": "dist/index.js",
@@ -64,6 +64,7 @@
     "jest-esm-transformer": "^1.0.0",
     "patch-package": "^8.0.0",
     "rollup": "^4.13.0",
+    "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-typescript2": "^0.36.0",
     "typescript": "^5.3.3"

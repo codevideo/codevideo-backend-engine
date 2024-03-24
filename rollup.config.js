@@ -1,22 +1,31 @@
 import typescript from "rollup-plugin-typescript2";
 import dts from "rollup-plugin-dts";
-import commonjs from "@rollup/plugin-commonjs";
-import resolve from "@rollup/plugin-node-resolve";
-import json from "@rollup/plugin-json";
+import del from "rollup-plugin-delete";
 
 export default [
-  // output ES module
+  // standard package
   {
     input: "src/index.ts",
     output: {
-      dir: "dist",
+      file: "dist/index.js",
       format: "es",
     },
     plugins: [
-      resolve(), // resolve node_modules
-      commonjs(), // convert CommonJS to ES modules
-      typescript(),
-      json(),
+      typescript(), 
+      del({ targets: "dist/*" })
+    ],
+    external: [
+      "fs",
+      "path",
+      "child_process",
+      "fs/promises",
+      "util",
+      "say",
+      "isomorphic-fetch",
+      "crypto",
+      "puppeteer",
+      "puppeteer-screen-recorder",
+      "@fullstackcraftllc/codevideo-types",
     ],
   },
   // type declarations
@@ -29,5 +38,18 @@ export default [
       },
     ],
     plugins: [dts()],
+    external: [
+      "fs",
+      "path",
+      "child_process",
+      "fs/promises",
+      "util",
+      "say",
+      "isomorphic-fetch",
+      "crypto",
+      "puppeteer",
+      "puppeteer-screen-recorder",
+      "@fullstackcraftllc/codevideo-types",
+    ],
   },
 ];
