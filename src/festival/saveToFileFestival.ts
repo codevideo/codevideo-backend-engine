@@ -16,5 +16,9 @@ export const saveToFileFestival = async (
     return;
   }
   console.log(`Writing audio file to ${filePath}`);
+
+  // escape double and single quotes
+  text = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
+  // TODO: fix potential security issue with shell injection
   await execPromise("echo " + text + " | text2wave | lame - " + filePath);
 };
