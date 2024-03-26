@@ -1,1 +1,1 @@
-export type TextToSpeechOptions = 'sayjs' | 'elevenlabs' | 'openai'
+export type TextToSpeechOptions = 'sayjs' | 'elevenlabs' | 'openai' | 'festival'

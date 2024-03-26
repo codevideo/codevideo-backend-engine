@@ -1,9 +1,11 @@
+import os from "os";
 import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
 import { TextToSpeechOptions } from "./../types/TextToSpeechOptions.js";
 import { saveToFileSay } from "../say/saveToFileSay.js";
 import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
 import { saveToFileOpenAI } from "../openai/saveToFileOpenAI.js";
+import { saveToFileFestival } from "../festival/saveToFileFestival.js";
 
 // loop over each step, converting "script" property to audio with say
 export const convertSpeakActionsToAudio = async (
@@ -33,8 +35,15 @@ export const convertSpeakActionsToAudio = async (
     );
     const textToSpeak = speakActions[i].value;
 
+      const platform = os.platform();
+      if (platform !== "linux") {
+        console.log("sayjs is only supported on linux")
+      }
+
     // free version with say (installed outofthebox on mac)
     switch (textToSpeechOption) {
+      case "festival":
+        await saveToFileFestival(hash, textToSpeak, audioFolderPath, forceOverwrite);
       case "sayjs":
         await saveToFileSay(hash, textToSpeak, audioFolderPath, forceOverwrite);
         break;

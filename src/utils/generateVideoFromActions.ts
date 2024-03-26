@@ -1,10 +1,11 @@
 import fs from "fs";
+import os from "os";
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 import { addAudioToVideo } from "../audio/addAudioToVideo.js";
 import { buildAudioFile } from "../audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
-import { loadActions } from "../io/loadActions.js";
 import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
+import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 
 // TODO: using VideoGenerator class?
 // export const generateVideoFromActions = async (actions: Array<IAction>): Promise<Buffer> => {
@@ -14,13 +15,14 @@ import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
 // };
 
 // using series of functions
-export const generateVideoFromActions = async (actions: Array<IAction>): Promise<Buffer> => {
-  // const { url, videoFile, actionsAudioDirectory, textToSpeechOption } =
-  //   await loadActions();
-
+export const generateVideoFromActions = async (actions: Array<IAction>, textToSpeechOption: TextToSpeechOptions): Promise<Buffer> => {
   const fileNameWithoutExtension = "tmp";
   const currentWorkingDirectory = process.cwd();
-  const textToSpeechOption = "sayjs";
+  
+  if (os.platform() === "linux" && textToSpeechOption === "sayjs") {
+    console.log("sayjs is only supported on windows and mac, using festival instead");
+    textToSpeechOption = "festival";
+  }
 
   // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
   // TODO: this will now break local usages, we'll make a better solution for this later

@@ -86,14 +86,5 @@ export const moveMouseInHumanLikeWay = async (
   }
 
   // Move the mouse along the bezier curve points
-
   await mouse.move(bezierCurvePoints);
 };
-
-// Example usage:
-const startPoint: Point = new Point(100, 100);
-const endPoint: Point = new Point(500, 400);
-const curveType: BezierCurveType = "straight-line";
-const jitter: boolean = true;
-
-moveMouseInHumanLikeWay(startPoint, endPoint, curveType, jitter);

@@ -18,7 +18,7 @@ const main = async () => {
     },
   ];
 
-  const video = await generateVideoFromActions(actions);
+  const video = await generateVideoFromActions(actions, "sayjs");
   fs.writeFileSync("video.mp4", video);
 };
 

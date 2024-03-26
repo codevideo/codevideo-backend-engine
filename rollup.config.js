@@ -23,6 +23,7 @@ export default [
     ],
     external: [
       "fs",
+      "os",
       "path",
       "child_process",
       "fs/promises",
@@ -47,6 +48,7 @@ export default [
     plugins: [dts()],
     external: [
       "fs",
+      "os",
       "path",
       "child_process",
       "fs/promises",

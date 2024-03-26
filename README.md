@@ -88,7 +88,7 @@ Implementation of a Fibonacci function in TypeScript in a Monaco editor at `loca
 
 - [TypeScript Fibonacci implementation](./video-examples/fibonacci.mp4)
 
-Using the actual Visual Studio Code application, demonstrating how to use JavaScript's console.log function in Node.js, including opening the file and starting the script from the terminal. Driven by [`robotjs`](https://github.com/octalmage/robotjs) (cloned by CodeVideo and soon to be improved at [`robotts`](https://github.com/codevideo/robotts)):
+Using the actual Visual Studio Code application, demonstrating how to use JavaScript's console.log function in Node.js, including opening the file and starting the script from the terminal. Driven by [`nut-js`](https://github.com/nut-tree/nut.js)
 
 - [JavaScript console.log in Node.js](./video-examples/console-log.mov)
 
@@ -96,7 +96,19 @@ Using the actual Visual Studio Code application, demonstrating how to use JavaSc
 
 ### Free
 
-You can use say.js for free, but this will be a very robotic sounding voice.
+*Windows and Mac*
+
+You can use `sayjs`, but this will be a very robotic sounding voice.
+
+*Linux*
+
+We have a `festival` voice available for Linux users. Keep in mind with this option you must have `festival` and `lame` installed on your system, i.e.
+
+```bash
+sudo apt-get install festival lame
+```
+
+```bash
 
 ### Paid
 
