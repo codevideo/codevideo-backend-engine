@@ -10,6 +10,7 @@ export const runPuppeteerAutomation = async (url: string, videoFile: string, act
     console.log("recording video...");
     // then run the automation
     const browser = await puppeteer.launch({
+      args: ["--disable-dev-shm-usage", "--no-sandbox"], // both flags needed for docker, see: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
       headless: "new",
       // headless: false, // for debugging
       // devtools: true, // for debugging
