@@ -1,27 +1,10 @@
 import fs from "fs";
 import os from "os";
-import { IAction, ProgrammingLanguages, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 import { addAudioToVideo } from "../audio/addAudioToVideo.js";
 import { buildAudioFile } from "../audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
 import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
-
-// TODO: using VideoGenerator class?
-// export const generateVideoFromActions = async (actions: Array<IAction>): Promise<Buffer> => {
-//   const videoGenerator = new VideoGenerator();
-//   await videoGenerator.makeVideo();
-//   return videoGenerator.getVideoAsBuffer();
-// };
-
-// create contract for this function
-export interface IGenerateVideoFromActionsOptions {
-  actions: Array<IAction>,
-  language: ProgrammingLanguages,
-  textToSpeechOption: TextToSpeechOptions,
-  initialCode?: string,
-  ttsApiKey?: string;
-  ttsVoiceId?: string;
-}
+import { IGenerateVideoFromActionsOptions } from "../interfaces/IGenerateVideoFromActionsOptions.js";
 
 // using series of functions
 export const generateVideoFromActions = async (options: IGenerateVideoFromActionsOptions): Promise<Buffer> => {
