@@ -1,7 +1,6 @@
-import { TextToSpeechOptions } from './../types/TextToSpeechOptions.js';
 import path from "path";
 import fs from "fs";
-import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 
 export const loadActions = async (): Promise<{
   url: string;

@@ -1,18 +1,20 @@
 import os from "os";
-import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
-import { TextToSpeechOptions } from "./../types/TextToSpeechOptions.js";
+import { IAction, isSpeakAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 import { saveToFileSay } from "../say/saveToFileSay.js";
 import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
 import { saveToFileOpenAI } from "../openai/saveToFileOpenAI.js";
 import { saveToFileFestival } from "../festival/saveToFileFestival.js";
+import { saveToFileCoquiAi } from "../coqui-ai-tts/saveToFileCoquiAi.js";
 
 // loop over each step, converting "script" property to audio with say
 export const convertSpeakActionsToAudio = async (
   actions: Array<IAction>,
   audioFolderPath: string,
   forceOverwrite: boolean,
-  textToSpeechOption: TextToSpeechOptions
+  textToSpeechOption: TextToSpeechOptions,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
 ) => {
   const audioFiles: Array<string> = [];
 
@@ -42,6 +44,8 @@ export const convertSpeakActionsToAudio = async (
 
     // free version with say (installed outofthebox on mac)
     switch (textToSpeechOption) {
+      case "coqui-ai":
+        await saveToFileCoquiAi(hash, textToSpeak, audioFolderPath, forceOverwrite);
       case "festival":
         await saveToFileFestival(hash, textToSpeak, audioFolderPath, forceOverwrite);
       case "sayjs":
@@ -53,7 +57,9 @@ export const convertSpeakActionsToAudio = async (
           hash,
           textToSpeak,
           audioFolderPath,
-          forceOverwrite
+          forceOverwrite,
+          ttsApiKey,
+          ttsVoiceId
         );
         break;
       case "openai":
@@ -62,7 +68,9 @@ export const convertSpeakActionsToAudio = async (
           hash,
           textToSpeak,
           audioFolderPath,
-          forceOverwrite
+          forceOverwrite,
+          ttsApiKey,
+          ttsVoiceId
         );
         break;
       default:

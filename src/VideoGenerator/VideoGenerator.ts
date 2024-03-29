@@ -1,12 +1,11 @@
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
-import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 import { executeAction } from "../actions/executeAction.js";
 import { addAudioToVideo } from "../audio/addAudioToVideo.js";
 import { buildAudioFile } from "../audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
 import { loadActions } from "../io/loadActions.js";
-import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
 

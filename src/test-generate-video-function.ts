@@ -6,11 +6,11 @@ const main = async () => {
   const actions: Array<IAction> = [
     {
       name: "speak-before",
-      value: "I'm going to type 'Hello, world!' in the editor.",
+      value: "I'm going to type a comment of 'Hello, world!' in the editor.",
     },
     {
       name: "type-editor",
-      value: "Hello, world!",
+      value: "// Hello, world!",
     },
     {
       name: "speak-before",
@@ -18,7 +18,7 @@ const main = async () => {
     },
   ];
 
-  const video = await generateVideoFromActions(actions, "sayjs");
+  const video = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "sayjs"});
   fs.writeFileSync("video.mp4", video);
 };
 

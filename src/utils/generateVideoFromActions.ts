@@ -1,11 +1,10 @@
 import fs from "fs";
 import os from "os";
-import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { IAction, ProgrammingLanguages, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 import { addAudioToVideo } from "../audio/addAudioToVideo.js";
 import { buildAudioFile } from "../audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
 import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
-import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 
 // TODO: using VideoGenerator class?
 // export const generateVideoFromActions = async (actions: Array<IAction>): Promise<Buffer> => {
@@ -14,20 +13,32 @@ import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 //   return videoGenerator.getVideoAsBuffer();
 // };
 
+// create contract for this function
+export interface IGenerateVideoFromActionsOptions {
+  actions: Array<IAction>,
+  language: ProgrammingLanguages,
+  textToSpeechOption: TextToSpeechOptions,
+  initialCode?: string,
+  ttsApiKey?: string;
+  ttsVoiceId?: string;
+}
+
 // using series of functions
-export const generateVideoFromActions = async (actions: Array<IAction>, textToSpeechOption: TextToSpeechOptions): Promise<Buffer> => {
+export const generateVideoFromActions = async (options: IGenerateVideoFromActionsOptions): Promise<Buffer> => {
+  const { actions, language, textToSpeechOption, initialCode, ttsApiKey, ttsVoiceId } = options;
   const fileNameWithoutExtension = "tmp";
   const currentWorkingDirectory = process.cwd();
   
+  let resolvedTextToSpeechOption = textToSpeechOption;
   if (os.platform() === "linux" && textToSpeechOption === "sayjs") {
     console.log("sayjs is only supported on windows and mac, using festival instead");
-    textToSpeechOption = "festival";
+    resolvedTextToSpeechOption = "festival";
   }
 
   // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
   // TODO: this will now break local usages, we'll make a better solution for this later
   const directoryOfPackageDistItself = `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;
-  const editorUrl = `file://${directoryOfPackageDistItself}/editor.html`;
+  const editorUrl = `file://${directoryOfPackageDistItself}/editor.html?language=${language}&initialCode=${initialCode}`;
 
   // create all folders as needed if they don't exist
   fs.mkdirSync(`${currentWorkingDirectory}/tmp`, { recursive: true });
@@ -43,7 +54,9 @@ export const generateVideoFromActions = async (actions: Array<IAction>, textToSp
     actions,
     audioDirectory,
     false,
-    textToSpeechOption
+    resolvedTextToSpeechOption,
+    ttsApiKey,
+    ttsVoiceId
   );
 
   // then run the puppeteer automation, which records the video and returns the start times of each audio

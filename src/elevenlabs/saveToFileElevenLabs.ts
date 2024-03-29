@@ -1,5 +1,5 @@
-import fs from 'fs';
-import fetch from 'isomorphic-fetch';
+import fs from "fs";
+import fetch from "isomorphic-fetch";
 
 interface VoiceSettings {
   stability: number;
@@ -15,14 +15,23 @@ interface TextToSpeechRequest {
 // eleven lab's can't handle reading of "C#" very well
 const customTransforms: Record<string, string> = {
   "C#": "C sharp",
-}
+};
 
-export const saveToFileElevenLabs = async (filename: string, textToSpeak: string, audioFolderPath: string, forceOverwrite: boolean) => {
-
+export const saveToFileElevenLabs = async (
+  filename: string,
+  textToSpeak: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
   // apply custom transforms to the text
   for (const key in customTransforms) {
     if (textToSpeak.includes(key)) {
-      textToSpeak = textToSpeak.replace(new RegExp(key, 'g'), customTransforms[key]);
+      textToSpeak = textToSpeak.replace(
+        new RegExp(key, "g"),
+        customTransforms[key]
+      );
     }
   }
 
@@ -35,14 +44,14 @@ export const saveToFileElevenLabs = async (filename: string, textToSpeak: string
 
   // headers for elevenlabs
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'xi-api-key': process.env.ELEVEN_LABS_API_KEY || '',
-    'Accept': 'audio/mpeg',
+    "Content-Type": "application/json",
+    "xi-api-key": ttsApiKey || "",
+    Accept: "audio/mpeg",
   };
 
   const body: TextToSpeechRequest = {
     text: textToSpeak,
-    model_id: 'eleven_turbo_v2',
+    model_id: "eleven_turbo_v2",
     voice_settings: {
       stability: 0.5,
       similarity_boost: 0.95,
@@ -53,9 +62,11 @@ export const saveToFileElevenLabs = async (filename: string, textToSpeak: string
     // elli voice id MF3mGyEYCl7XYWbV9V6O
     // Chris voice (my own professional voice) id 1RLeGxy9FHYB5ScpFkts
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVEN_LABS_VOICE_ID || ''}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${
+        ttsVoiceId || ""
+      }`,
       {
-        method: 'POST',
+        method: "POST",
         headers: headers,
         body: JSON.stringify(body),
       }
@@ -75,9 +86,11 @@ export const saveToFileElevenLabs = async (filename: string, textToSpeak: string
     // write the file with fs
     fs.writeFileSync(filePath, Buffer.from(buffer));
 
-    console.log(`Script for step ${filename} converted to audio with Eleven Labs.`);
+    console.log(
+      `Script for step ${filename} converted to audio with Eleven Labs.`
+    );
   } catch (error) {
     console.error(error);
     return null;
   }
-}
+};

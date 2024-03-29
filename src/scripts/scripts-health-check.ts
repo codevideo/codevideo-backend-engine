@@ -1,11 +1,10 @@
-import { IAction, isSpeakAction } from "@fullstackcraftllc/codevideo-types";
+import { IAction, isSpeakAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 import { preprocessStringForComparison } from "../utils/preprocessStringForComparison.js";
 import { loadActions } from "../io/loadActions.js";
 import { speechToText } from "../openai/speechToText.js";
 import { levenshteinDistance } from "../utils/levenshteinDistance.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
-import { TextToSpeechOptions } from "../types/TextToSpeechOptions.js";
 
 const distanceThreshold = 0;
 

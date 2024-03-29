@@ -1,9 +1,10 @@
 import fs from "fs";
 import * as util from "util";
 import { exec } from "child_process";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav";
 const execPromise = util.promisify(exec);
 
-export const saveToFileFestival = async (
+export const saveToFileCoquiAi = async (
   id: string,
   text: string,
   audioFolderPath: string,
@@ -15,11 +16,12 @@ export const saveToFileFestival = async (
     console.log(`File with hash ${id} already exists. Skipping...`);
     return;
   }
-  console.log(`Writing audio file to ${filePath}`);
 
+  const wavFile = `${audioFolderPath}/${id}.wav`;
   // escape double and single quotes
   text = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
   // TODO: fix potential security issue with shell injection
-  await execPromise("echo " + text + " | text2wave | lame - " + filePath);
-  console.log(`Script for step ${id} converted to audio with festival.`);
+  await execPromise('tts --text "' + text + '" --out_path ' + wavFile);
+  await convertWavToMp3AndDeleteWav(wavFile, forceOverwrite);
+  console.log(`Script for step ${id} converted to audio with say.`);
 };

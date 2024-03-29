@@ -13,7 +13,9 @@ export const saveToFileOpenAI = async (
   filename: string,
   textToSpeak: string,
   audioFolderPath: string,
-  forceOverwrite: boolean
+  forceOverwrite: boolean,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
 ) => {
   const filePath = `${audioFolderPath}/${filename}.mp3`;
   if (fs.existsSync(filePath) && !forceOverwrite) {
@@ -22,13 +24,13 @@ export const saveToFileOpenAI = async (
   }
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    Authorization: `Bearer ${ttsApiKey}`,
     "Content-Type": "application/json",
   };
 
   const data: OpenAITTSRequest = {
     model: "tts-1",
-    voice: "echo",
+    voice: ttsVoiceId || "echo",
     input: textToSpeak,
     response_format: "mp3",
     speed: 1.0,

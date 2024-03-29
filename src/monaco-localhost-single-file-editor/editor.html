@@ -25,11 +25,14 @@
         // Function to get query parameters from the URL
         function getQueryParam(name) {
           const urlParams = new URLSearchParams(window.location.search);
-          return urlParams.get(name);
+          const value = urlParams.get(name);
+          return value === "" ? null : value;
         }
 
         // Check if the "initialCode" query parameter is present
         const initialCodeParam = getQueryParam("initialCode");
+        // Check if the "language" query parameter is present
+        const languageParam = getQueryParam("language");
 
         require.config({
           paths: {
@@ -42,7 +45,7 @@
             document.getElementById("editor"),
             {
               value: [initialCodeParam || ""].join("\n"),
-              language: "javascript",
+              language: languageParam || "javascript",
               theme: "vs-dark",
               fontSize: 20,
             }
