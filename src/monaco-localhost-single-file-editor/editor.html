@@ -58,6 +58,13 @@
 
           // click once in the editor so we get the caret showing
           window.editor.focus();
+
+          // if there was initial code, then we need to set the cursor to the end of the code
+          if (initialCodeParam) {
+            const lineCount = window.editor.getModel().getLineCount();
+            const column = window.editor.getModel().getLineLength(lineCount);
+            window.editor.setPosition({ lineNumber: lineCount, column });
+          }
         });
       }
     </script>

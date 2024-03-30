@@ -1,5 +1,9 @@
 import os from "os";
-import { IAction, isSpeakAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+import {
+  IAction,
+  isSpeakAction,
+  TextToSpeechOptions,
+} from "@fullstackcraftllc/codevideo-types";
 import { saveToFileSay } from "../say/saveToFileSay.js";
 import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
@@ -37,17 +41,28 @@ export const convertSpeakActionsToAudio = async (
     );
     const textToSpeak = speakActions[i].value;
 
-      const platform = os.platform();
-      if (platform !== "linux") {
-        console.log("sayjs is only supported on linux")
-      }
+    const platform = os.platform();
+    if (platform === "linux" && textToSpeechOption === "sayjs") {
+      console.log("sayjs is not supported on linux");
+      throw new Error("sayjs is not supported on linux");
+    }
 
     // free version with say (installed outofthebox on mac)
     switch (textToSpeechOption) {
       case "coqui-ai":
-        await saveToFileCoquiAi(hash, textToSpeak, audioFolderPath, forceOverwrite);
+        await saveToFileCoquiAi(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite
+        );
       case "festival":
-        await saveToFileFestival(hash, textToSpeak, audioFolderPath, forceOverwrite);
+        await saveToFileFestival(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite
+        );
       case "sayjs":
         await saveToFileSay(hash, textToSpeak, audioFolderPath, forceOverwrite);
         break;

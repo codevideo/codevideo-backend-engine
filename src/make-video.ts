@@ -30,7 +30,7 @@ const makeVideo = async () => {
   // then combine the audio and video files
   // TODO: quick fix for videoDirectory is the videoFile without the file name
   const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
-  await addAudioToVideo(videoDirectory, videoFile, actionsAudioDirectory);
+  await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
 };
 
 makeVideo();

@@ -7,4 +7,5 @@ export interface IGenerateVideoFromActionsOptions {
     initialCode?: string,
     ttsApiKey?: string;
     ttsVoiceId?: string;
+    guid?: string,
   }

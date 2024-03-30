@@ -1,14 +1,15 @@
 # CodeVideo Backend Engine
 
-_Any sufficiently advanced technology is indistinguishable from magic._ 😉
-
 ![NPM Version](https://img.shields.io/npm/v/@fullstackcraftllc/codevideo-backend-engine)
 ![Code Quality](https://img.shields.io/badge/Code_Quality-Spaghetti-blue)
-![Code Coverage](https://img.shields.io/badge/Code_Quality-Minimal-blue)
+![Code Coverage](https://img.shields.io/badge/Code_Coverage-Minimal-blue)
+![Tests](https://img.shields.io/badge/Tests-Dubious-blue)
 ![Moral](https://img.shields.io/badge/Code_Quality-High-blue)
 ![Tool Abilities](https://img.shields.io/badge/Tool_Abilities-Insane-blue)
 
 Create shockingly realistic automated software videos!
+
+_Any sufficiently advanced technology is indistinguishable from magic._ 😉
 
 ## Quick Start - Programmatic Usage
 
@@ -23,22 +24,26 @@ Use it in your project!
 ```typescript
 import fs from 'fs'
 import { generateVideoFromActions } from '@fullstackcraft/codevideo-backend-engine'
-import { IAction } from '@fullstackcraft/codevideo-backend-engine/dist/types'
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
 
-const actions: Array<IAction> = [
-  {
-    name: "speak-before",
-    value: "I'm gonna type some code!"
-  },
-  {
-    name: "type-editor",
-    value: "console.log('Hello, world!');"
-  },
-]
+const videoOptions: IGenerateVideoFromActionsOptions = {
+  actions: [
+    {
+      name: "speak-before",
+      value: "I'm gonna type some code!"
+    },
+    {
+      name: "type-editor",
+      value: "console.log('Hello, world!');"
+    },
+  ],
+  language: "en-US",
+  textToSpeechOption: "coqui-ia" // free & decent quality voice, but requires coqui-ai to be installed: 'pip install TTS'
+}
 
 
 // 'video' is a Buffer representing an mp4 video
-const video = generateVideoFromActions(actions)
+const video = generateVideoFromActions(videoOptions)
 
 // for example, save the video to a file
 fs.writeFileSync('hello-world.mp4', video)

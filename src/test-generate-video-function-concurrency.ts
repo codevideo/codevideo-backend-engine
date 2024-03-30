@@ -1,9 +1,11 @@
 import fs from "fs";
 import { IAction } from "@fullstackcraftllc/codevideo-types";
 import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
 
 const main = async () => {
-  const actions: Array<IAction> = [
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    actions: [
     {
       name: "speak-before",
       value: "I'm going to type a comment of 'Hello, world!' in the editor.",
@@ -36,10 +38,14 @@ const main = async () => {
       name: "speak-before",
       value: "Yeah, I'm pretty much awesome.",
     },
-  ];
+  ],
+  language: "javascript",
+  textToSpeechOption: "coqui-ai",
+  };
 
-  const video = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
-  fs.writeFileSync("video.mp4", video);
+  // use promise.all to run multiple instances of the function concurrently
+  const promises = Array.from({ length: 10 }, () => generateVideoFromActions(videoOptions));
+  await Promise.all(promises);
 };
 
 main();

@@ -164,7 +164,7 @@ const main = async () => {
     // TODO: quick fix for videoDirectory is the videoFile without the file name
     const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
 
-    await addAudioToVideo(videoDirectory, videoFile, actionsAudioDirectory);
+    await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
   } catch (error) {
     console.error("MAIN ERROR:", error);
   }

@@ -1,7 +1,8 @@
 import fs from "fs";
 import * as util from "util";
 import { exec } from "child_process";
-import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav.js";
+
 const execPromise = util.promisify(exec);
 
 export const saveToFileCoquiAi = async (
