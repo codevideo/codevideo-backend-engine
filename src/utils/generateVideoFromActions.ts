@@ -28,6 +28,8 @@ export const generateVideoFromActions = async (options: IGenerateVideoFromAction
   resolvedInitialCode = encodeURIComponent(resolvedInitialCode || "");
 
   // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
+  console.log("NODE ENV IS");
+  console.log(process.env.NODE_ENV);
   const directoryOfEditorHtmlFile = process.env.NODE_ENV === "development" ? 
   `${currentWorkingDirectory}/src/monaco-localhost-single-file-editor` : 
   `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;

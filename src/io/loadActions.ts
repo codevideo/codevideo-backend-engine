@@ -71,13 +71,12 @@ export const loadActions = async (): Promise<{
   );
   const actionsAudioDirectory = `${currentWorkingDirectory}/audio/${fileNameWithoutExtension}`;
   const actionsVideoDirectory = `${currentWorkingDirectory}/video/${fileNameWithoutExtension}`;
-  const url = `file://${currentWorkingDirectory}/editor.html`;
+  console.log("PROCESS ENV IS" + process.env.NODE_ENV);
+  const directoryOfEditorHtmlFile = process.env.NODE_ENV === "development" ? 
+  `${currentWorkingDirectory}/src/monaco-localhost-single-file-editor` : 
+  `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;
+  const url = `file://${directoryOfEditorHtmlFile}/editor.html`;
   const videoFile = `./video/${fileNameWithoutExtension}.mp4`;
-
-  // if we see at least one 'type-terminal' action, then we know this has to run on a codespaces
-  // if (actions.map((a) => a.name).includes("type-terminal")) {
-  //   url = `https://prod.liveshare.vsengsaas.visualstudio.com/join?049AB4AD9BC16BE338A13263281272C72C49`;
-  // }
 
   return {
     url,

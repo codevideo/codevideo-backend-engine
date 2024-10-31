@@ -27,5 +27,5 @@ export const addAudioToVideo = async (
 
   // now get rid of final by renaming it and overwriting the original video file
   fs.renameSync(`${combinedVideoFileName}`, videoFile);
-  console.log(`Video file '${videoFileNoExtension}.mp4' created successfully.`);
+  console.log(`Video file '${videoFileNoExtension}.mp4' created successfully. Play it with 'open ${videoFile}'`);
 };

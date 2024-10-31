@@ -1,5 +1,6 @@
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
+import dotenv from "dotenv";
 import { executeAction } from "./actions/executeAction.js";
 import { addAudioToVideo } from "./audio/addAudioToVideo.js";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
@@ -7,6 +8,9 @@ import { buildAudioFile } from "./audio/buildAudioFile.js";
 import { loadActions } from "./io/loadActions.js";
 import { sha256Hash } from "./utils/sha256Hash.js";
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+
+// Load environment variables
+dotenv.config();
 
 let trueAudioStartTime = 0;
 

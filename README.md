@@ -49,7 +49,7 @@ const video = generateVideoFromActions(videoOptions)
 fs.writeFileSync('hello-world.mp4', video)
 ```
 
-## Quick Start - CLI Usage
+## Quick Start - Development or Local CLI Usage
 
 Clone this repository:
 
@@ -60,7 +60,7 @@ git clone https://github.com/codevideo/codevideo-ai.git
 Move into the repo:
 
 ```bash
-cd codevideo-ai
+cd codevideo-backend-engine
 ```
 
 Install dependencies:
@@ -103,17 +103,19 @@ Using the actual Visual Studio Code application, demonstrating how to use JavaSc
 
 *Windows and Mac*
 
-You can use `sayjs`, but this will be a very robotic sounding voice.
+`sayjs` is available for both Windows and Mac, but this will be a very robotic sounding voice.
+
+`coqui` is also available, but requires the coqui-ai TTS package to be installed, check it out here: https://github.com/coqui-ai/TTS (should be as simple as `pip install TTS`)
 
 *Linux*
 
-We have a `festival` voice available for Linux users. Keep in mind with this option you must have `festival` and `lame` installed on your system, i.e.
+Festival
+
+`festival` is available for Linux users. Keep in mind with this option you must have `festival` and `lame` installed on your system, i.e.
 
 ```bash
 sudo apt-get install festival lame
 ```
-
-```bash
 
 ### Paid
 
@@ -142,8 +144,7 @@ npm run start ./examples/hello-world.json openai
 npm run start ./examples/hello-world.json sayjs
 ```
 
-this is anyway the default and it doesn't need to be explicitely included.
-
+this is anyway the default and it doesn't need to be explicitly included.
 
 ## Defining Actions
 
@@ -325,3 +326,7 @@ A few caveats are required to properly run desktop automation actions:
 ## Patches!
 
 Due to an ugly bug with `fluent-ffmpeg`, which is used by `puppeteer-screen-recorder`, the `fluent-ffmpeg` library has been patched with `patch-package`. For those interested, the patch is in `./patches/fluent-ffmpeg+2.1.2.patch`.
+
+## Nut.js
+
+Nut.js is an open source package but must be built from source as the creator has opted to make easy install from the CLI only for paying licensed customers (more power to him!). Codevideo will be more than happy to buy a license once this product starts generating revenue. The current source of a recent version of Nut.js, 4.2.0 is in the `sources` folder and installed in the `postinstall` script along with `patch-package`

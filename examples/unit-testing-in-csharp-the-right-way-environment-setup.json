@@ -1,0 +1,170 @@
+[
+    {
+        "name": "speak-before",
+        "value": "In this lesson, we'll set up our LogRotator project structure using the .NET CLI."
+    },
+    {
+        "name": "speak-before",
+        "value": "First, let's create our solution directory and navigate into it."
+    },
+    {
+        "name": "type-terminal",
+        "value": "mkdir LogRotator"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "type-terminal",
+        "value": "cd LogRotator"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "Now, let's create a new solution file."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet new sln"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "Next, we'll create our main library project."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet new classlib -n LogRotator"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "And create our test project using xUnit."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet new xunit -n LogRotator.Tests"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "Let's add both projects to our solution."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet sln add LogRotator/LogRotator.csproj"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet sln add LogRotator.Tests/LogRotator.Tests.csproj"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "Now let's add our required packages. First, we'll navigate to the main project."
+    },
+    {
+        "name": "type-terminal",
+        "value": "cd LogRotator"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "We'll add System.IO.Abstractions for file system operations."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet add package System.IO.Abstractions"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "And Microsoft.Extensions.TimeProvider for time-based operations."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet add package Microsoft.Extensions.TimeProvider"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "Now let's move to the test project and add its dependencies."
+    },
+    {
+        "name": "type-terminal",
+        "value": "cd ../LogRotator.Tests"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "We'll add Moq for mocking."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet add package Moq"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "And the testing helpers for System.IO.Abstractions."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet add package System.IO.Abstractions.TestingHelpers"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "Finally, we'll add a reference to our main project."
+    },
+    {
+        "name": "type-terminal",
+        "value": "dotnet add reference ../LogRotator/LogRotator.csproj"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "speak-before",
+        "value": "And that's it! We've set up our project structure with all necessary dependencies. In the next lesson, we'll start implementing our LogRotator class."
+    }
+]

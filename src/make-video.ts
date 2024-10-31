@@ -1,8 +1,12 @@
+import dotenv from "dotenv";
 import { addAudioToVideo } from "./audio/addAudioToVideo.js";
 import { buildAudioFile } from "./audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
 import { loadActions } from "./io/loadActions.js";
 import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
+
+// Load environment variables
+dotenv.config();
 
 const makeVideo = async () => {
   const { actions, url, videoFile, actionsAudioDirectory, textToSpeechOption } =
