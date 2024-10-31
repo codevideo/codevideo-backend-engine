@@ -2,7 +2,7 @@ import { Page } from "puppeteer";
 import type monaco from "monaco-editor";
 import { IAction } from "@fullstackcraftllc/codevideo-types"
 
-export const executeAction = async (
+export const executeActionForMonacoLocalhost = async (
   page: Page,
   id: number,
   action: IAction

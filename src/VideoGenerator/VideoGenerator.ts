@@ -1,7 +1,7 @@
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
 import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
-import { executeAction } from "../actions/executeAction.js";
+import { executeActionForMonacoLocalhost } from "../actions/executeActionForMonacoLocalhost.js";
 import { addAudioToVideo } from "../audio/addAudioToVideo.js";
 import { buildAudioFile } from "../audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
@@ -134,11 +134,11 @@ export class VideoGenerator {
             audioHash,
             `${this.actionsAudioDirectory}/${audioHash}.mp3`
           ),
-          executeAction(page, id, action),
+          executeActionForMonacoLocalhost(page, id, action),
         ]);
       } else if (action.name === "type-terminal") {
       } else {
-        await executeAction(page, id, action);
+        await executeActionForMonacoLocalhost(page, id, action);
       }
 
       console.log(`Step ${id} complete`);

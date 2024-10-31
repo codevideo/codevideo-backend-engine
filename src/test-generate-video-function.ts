@@ -38,8 +38,8 @@ const main = async () => {
     },
   ];
 
-  const video = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
-  fs.writeFileSync("video.mp4", video);
+  const {videoBuffer} = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
+  fs.writeFileSync("visual-studio-driver.mp4", videoBuffer);
 };
 
 main();

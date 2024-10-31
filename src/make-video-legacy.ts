@@ -125,11 +125,11 @@ const runPuppeteerAutomation = async (url: string) => {
           audioHash,
           `${actionsAudioDirectory}/${audioHash}.mp3`
         ),
-        executeAction(page, id, action),
+        executeActionForMonacoLocalhost(page, id, action),
       ]);
     } else if (action.name === "type-terminal") {
     } else {
-      await executeAction(page, id, action);
+      await executeActionForMonacoLocalhost(page, id, action);
     }
 
     console.log(`Step ${id} complete`);

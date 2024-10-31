@@ -1,18 +1,35 @@
-import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { IAction, ActionEnvironment } from "@fullstackcraftllc/codevideo-types";
 import puppeteer from "puppeteer";
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
-import { executeAction } from "../actions/executeAction.js";
+import { executeActionForMonacoLocalhost } from "../actions/executeActionForMonacoLocalhost.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
 import { playAudioInPuppeteer } from "./playAudioInPuppeteer.js";
+import { executeActionForVisualStudioCodeLocalhost } from "../actions/executeActionForVisualStudioCodeLocalhost.js";
 
-export const runPuppeteerAutomation = async (url: string, videoFile: string, actions: Array<IAction>, actionsAudioDirectory: string): Promise<Array<number>> => {
-    const audioStartTimes: Array<number> = [];
+
+const resolveActionRunnerFunction = (actionEnvironment: ActionEnvironment) => {
+  switch (actionEnvironment) {
+    case 'monaco-single-editor':
+      return executeActionForMonacoLocalhost;
+    case 'visual-studio-code-web':
+      return executeActionForVisualStudioCodeLocalhost;
+    // case 'visual-studio-code-native':
+    //   // TODO:
+    //   return executeActionForVisualStudioCodeNative;
+    default:
+      throw new Error(`Action environment not supported: ${actionEnvironment}`);
+  }
+}
+
+export const runPuppeteerAutomation = async (url: string, videoFile: string, actions: Array<IAction>, actionsAudioDirectory: string, actionEnvironment: ActionEnvironment): Promise<Array<number>> => {
+  const actionRunnerFunction = resolveActionRunnerFunction(actionEnvironment);  
+  const audioStartTimes: Array<number> = [];
     console.log("recording video...");
     // then run the automation
     const browser = await puppeteer.launch({
       args: ["--disable-dev-shm-usage", "--no-sandbox"], // both flags needed for docker, see: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
-      headless: "new",
-      // headless: false, // for debugging
+      // headless: "new",
+      headless: false, // for debugging
       // devtools: true, // for debugging
       // headless: "new",
       // executablePath:
@@ -28,9 +45,6 @@ export const runPuppeteerAutomation = async (url: string, videoFile: string, act
       width: 1920,
       height: 1080,
     });
-
-    // Wait for the Monaco Editor to load
-    await page.waitForFunction(() => (window as any).monaco !== undefined);
 
     // create and start the recording
     const recorder = new PuppeteerScreenRecorder(page);
@@ -69,12 +83,12 @@ export const runPuppeteerAutomation = async (url: string, videoFile: string, act
             audioHash,
             `${actionsAudioDirectory}/${audioHash}.mp3`
           ),
-          executeAction(page, id, action),
+          actionRunnerFunction(page, id, action),
         ]);
         audioStartTimes.push(audioStartTime);
       } else if (action.name === "type-terminal") {
       } else {
-        await executeAction(page, id, action);
+        await actionRunnerFunction(page, id, action);
       }
 
       console.log(`Step ${id} complete`);

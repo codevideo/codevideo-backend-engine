@@ -25,7 +25,8 @@ const makeVideo = async () => {
     url,
     videoFile,
     actions,
-    actionsAudioDirectory
+    actionsAudioDirectory,
+    'monaco-single-editor'
   );
 
   // now that we have the offset delays for each audio, build the audio file
