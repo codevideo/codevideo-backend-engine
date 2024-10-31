@@ -1,0 +1,6036 @@
+You are senior software engineer. Read the following lines and characters of code very carefully. Please respond with the following:
+
+1. Possible areas of improvement for the code, including which lines, functions, or classes.
+2. repeated portions of the code.
+3. an overall A-F score and 100-0 score for all code you've seen, from best to worse:
+
+import puppeteer, { Page } from "puppeteer";
+import fs from "fs";
+import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+import { executeActionForMonacoLocalhost } from "../actions/executeActionForMonacoLocalhost.js";
+import { addAudioToVideo } from "../audio/addAudioToVideo.js";
+import { buildAudioFile } from "../audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { loadActions } from "../io/loadActions.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+
+export class VideoGenerator {
+  private trueAudioStartTime = 0;
+  private actions: Array<IAction> = [];
+  private url = "";
+  private actionsAudioDirectory = "";
+  private forceOverwriteAudioFiles = false;
+  private textToSpeechOption: TextToSpeechOptions = "sayjs";
+  private videoFile = "";
+  private audioStartTimes: Array<number> = [];
+
+  // in constructor, set all the properties
+  initialize = async () => {
+    const {
+      actions,
+      url,
+      videoFile,
+      actionsAudioDirectory,
+      textToSpeechOption,
+    } = await loadActions();
+
+    // create audio directory if it doesn't exist
+    if (!fs.existsSync(actionsAudioDirectory)) {
+      fs.mkdirSync(actionsAudioDirectory);
+    }
+
+    this.actions = actions;
+    this.url = url;
+    this.actionsAudioDirectory = actionsAudioDirectory;
+    this.textToSpeechOption = textToSpeechOption;
+    this.videoFile = videoFile;
+  }
+
+  //  audio playback logic
+  // TODO: would be nice to move in with executeAction, but the page makes a closure
+  playAudioInPuppeteer = async (
+    page: Page,
+    audioHash: string,
+    filePath: string
+  ) => {
+    const scriptContent = `
+    window.audioPlaybackPromiseResolved = false;
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
+
+    audio${audioHash}.addEventListener('ended', () => {
+      window.audioPlaybackPromiseResolved = true;
+    });
+  `;
+
+    // Add the script tag to the page
+    await page.addScriptTag({ content: scriptContent });
+
+    // add the start time to the array
+    const startTime = Math.round(performance.now()) - this.trueAudioStartTime;
+    console.log(
+      `audio ${audioHash} (${filePath}) start time set to: ${startTime}`
+    );
+    this.audioStartTimes.push(startTime);
+    // Wait for the audio playback to complete
+    await page.waitForFunction(
+      () => (window as any).audioPlaybackPromiseResolved === true
+    );
+  };
+
+  runPuppeteerAutomation = async (url: string) => {
+    console.log("recording video...");
+    // then run the automation
+    const browser = await puppeteer.launch({
+      headless: "new",
+      // headless: false, // for debugging
+      // devtools: true, // for debugging
+      // headless: "new",
+      // executablePath:
+      //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+    });
+    const page = await browser.newPage();
+    await page.goto(url);
+    await page.setViewport({
+      width: 1920,
+      height: 1080,
+    });
+
+    // Wait for the Monaco Editor to load
+    await page.waitForFunction(() => (window as any).monaco !== undefined);
+
+    // create and start the recording
+    const recorder = new PuppeteerScreenRecorder(page);
+    await recorder.start(this.videoFile);
+
+    // add a 2 second delay before starting the steps
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // before beginning steps, save what current time we are in execution of this program
+    // needed for accurately calculating the audio start times
+    //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
+
+    // Automation commands based on steps
+    for (let i = 0; i < this.actions.length; i++) {
+      // treat index as 'step id'
+      const id = i + 1;
+      const action = this.actions[i];
+      console.log(`Step ${id} action: ${action.name}`);
+
+      const audioHash = sha256Hash(action.value);
+
+      // special case is audio playback
+      if (action.name === "speak-before") {
+        await this.playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${this.actionsAudioDirectory}/${audioHash}.mp3`
+        );
+        continue;
+      } else if (action.name === "speak-during") {
+        // use promise.all to play audio and execute action at the same time
+        await Promise.all([
+          this.playAudioInPuppeteer(
+            page,
+            audioHash,
+            `${this.actionsAudioDirectory}/${audioHash}.mp3`
+          ),
+          executeActionForMonacoLocalhost(page, id, action),
+        ]);
+      } else if (action.name === "type-terminal") {
+      } else {
+        await executeActionForMonacoLocalhost(page, id, action);
+      }
+
+      console.log(`Step ${id} complete`);
+    }
+
+    // wait 15 more seconds for any audio to finish playing
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+
+    // stop the recording
+    await recorder.stop();
+
+    // Close the browser
+    await browser.close();
+
+    console.log("video recorded");
+  };
+
+  // finally the function to orchestrate them all!!!
+  makeVideo = async () => {
+    // first convert scripts to audio
+    const audioFiles = await convertSpeakActionsToAudio(
+      this.actions,
+      this.actionsAudioDirectory,
+      this.forceOverwriteAudioFiles,
+      this.textToSpeechOption
+    );
+
+    await this.runPuppeteerAutomation(this.url);
+
+    // now that we have the offset delays for each audio, build the audio file
+    await buildAudioFile(
+      this.actionsAudioDirectory,
+      audioFiles,
+      this.audioStartTimes
+    );
+
+    // then combine the audio and video files
+    // TODO: quick fix for videoDirectory is the videoFile without the file name
+    const videoDirectory = this.videoFile.replace(/\/[^/]+$/, "");
+    await addAudioToVideo("", videoDirectory, this.videoFile, this.actionsAudioDirectory);
+  };
+
+  getVideoAsBuffer = async () => {
+    const videoBuffer = fs.readFileSync(this.videoFile);
+    return videoBuffer;
+  }
+}
+import { Page } from "puppeteer";
+import type monaco from "monaco-editor";
+import { IAction } from "@fullstackcraftllc/codevideo-types"
+
+export const executeActionForMonacoLocalhost = async (
+  page: Page,
+  id: number,
+  action: IAction
+) => {
+  await page.evaluate(
+    async (id, action) => {
+      // WARNING - you can't refactor this const to some other function because the 'browser' can't load local typescript files of course!
+      // YOU HAVE BEEN WARNED!
+      const KEYBOARD_TYPING_PAUSE_MS = 75;
+
+      let startTime = -1;
+      const editor = (window as any).editor;
+      // @ts-ignore
+      editor.getSupportedActions().forEach((value) => {
+        console.log(value);
+      });
+
+      // define the human typing here in the puppeteer environment
+      const simulateHumanTyping = (
+        editor: monaco.editor.IStandaloneCodeEditor,
+        code: string
+      ) => {
+        return new Promise<void>((resolve) => {
+          const characters: string[] = code.split("");
+          let index: number = 0;
+
+          function typeNextCharacter(): void {
+            if (index < characters.length) {
+              const char: string = characters[index];
+              const selection = editor.getSelection();
+              editor.executeEdits("simulateTyping", [
+                {
+                  range: {
+                    startLineNumber: selection?.selectionStartLineNumber || 1,
+                    startColumn: selection?.selectionStartColumn || 1,
+                    endLineNumber: selection?.endLineNumber || 1,
+                    endColumn: selection?.endColumn || 1,
+                  },
+                  text: char,
+                  forceMoveMarkers: true,
+                },
+              ]);
+              index++;
+              setTimeout(typeNextCharacter, KEYBOARD_TYPING_PAUSE_MS);
+            } else {
+              resolve();
+            }
+          }
+
+          typeNextCharacter();
+        });
+      };
+      
+      const simulateKeyboardPause = async () => {
+        await new Promise((resolve) =>
+          setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
+        );
+      }
+
+      const highlightText = (
+        editor: monaco.editor.IStandaloneCodeEditor,
+        searchText: string
+      ) => {
+        const model = editor.getModel();
+
+        // Find the position of the searchText in the model
+        // @ts-ignore
+        const searchTextPosition = model.findNextMatch(
+          searchText,
+          // @ts-ignore
+          new monaco.Position(1, 1)
+        );
+
+        // If searchText is found
+        if (searchTextPosition) {
+          const line = searchTextPosition.range.startLineNumber;
+          const column = searchTextPosition.range.startColumn;
+
+          // Move the cursor to the beginning of the searchText
+          editor.setPosition({ lineNumber: line, column });
+
+          // Reveal the line in the center
+          editor.revealLineInCenter(line);
+
+          // Calculate the range of the searchText
+          const searchTextLength = searchText.length;
+          // @ts-ignore
+          const range = new monaco.Range(
+            line,
+            column,
+            line,
+            column + searchTextLength
+          );
+
+          // Set the selection to highlight the searchText
+          editor.setSelection(range);
+
+          // Reveal the range in the center
+          editor.revealRangeInCenter(range);
+        }
+      };
+
+      // try to parse the 'times' value as an integer, if it fails, default to 1
+      // the times doesn't always apply to some actions, so we do that action just once
+      let times = parseInt(action.value) || 1;
+      console.log("times", times);
+      let pos;
+      for (let i = 0; i < times; i++) {
+        // actual logic
+        switch (action.name) {
+          // case "speak-before":
+          //   await playAudioInPuppeteer(
+          //     id,
+          //     `./audio/${action.value}.mp3`
+          //   );
+          //   break;
+          case "arrow-down":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.lineNumber = pos.lineNumber + 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "arrow-up":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.lineNumber = pos.lineNumber - 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "tab":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.lineNumber = pos.lineNumber + 2;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "arrow-left":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = pos.column - 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "arrow-right":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = pos.column + 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "enter":
+            await simulateHumanTyping(editor, "\n");
+            break;
+          case "delete-line":
+            console.log("deleting line");
+            // @ts-ignore
+            let line = editor.getPosition().lineNumber;
+            editor.executeEdits("", [
+              // @ts-ignore
+              { range: new monaco.Range(line, 1, line + 1, 1), text: null },
+            ]);
+            await simulateKeyboardPause();
+            break;
+          case "command-right":
+            // simulate moving to the end of the current line
+            // @ts-ignore
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = 100000;
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          default:
+            break;
+          case "highlight-code":
+            highlightText(editor, action.value);
+          case "space":
+            await simulateHumanTyping(editor, " ");
+            break;
+          case "backspace":
+            // @ts-ignore
+            editor.trigger(monaco.KeyCode.Backspace, "deleteLeft");
+            await simulateKeyboardPause();
+            break;
+          case "type-editor":
+            await simulateHumanTyping(editor, action.value);
+            break;
+        }
+      }
+      return startTime;
+    },
+    id,
+    action
+  );
+};
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { Page } from "puppeteer";
+import { wait } from "../utils/wait.js";
+
+export const executeActionForVisualStudioCodeLocalhost = async (
+  page: Page,
+  id: number,
+  action: IAction
+) => {
+  const KEYBOARD_TYPING_PAUSE_MS = 75;
+
+  const simulateKeyboardPause = async () => {
+    await wait(KEYBOARD_TYPING_PAUSE_MS);
+  };
+
+  const simulateArrowDown = async () => {
+    await page.keyboard.press("ArrowDown");
+    await simulateKeyboardPause();
+  };
+
+  const simulateArrowUp = async () => {
+    await page.keyboard.press("ArrowUp");
+    await simulateKeyboardPause();
+  };
+
+  const simulateTab = async () => {
+    await page.keyboard.press("Tab");
+    await simulateKeyboardPause();
+  };
+
+  const simulateArrowLeft = async () => {
+    await page.keyboard.press("ArrowLeft");
+    await simulateKeyboardPause();
+  };
+
+  const simulateArrowRight = async () => {
+    await page.keyboard.press("ArrowRight");
+    await simulateKeyboardPause();
+  };
+
+  const simulateEnter = async () => {
+    await page.keyboard.press("Enter");
+    await simulateKeyboardPause();
+  };
+
+  const simulateBackspace = async () => {
+    await page.keyboard.press("Backspace");
+    await simulateKeyboardPause();
+  };
+
+  const simulateSpace = async () => {
+    await page.keyboard.press("Space");
+    await simulateKeyboardPause();
+  };
+
+  const simulateTyping = async (text: string) => {
+    for (let i = 0; i < text.length; i++) {
+      await page.keyboard.type(text[i], { delay: KEYBOARD_TYPING_PAUSE_MS });
+    }
+  };
+
+  const simulateHighlightText = async (searchText: string) => {
+    // You may need to implement text highlighting logic here based on your specific use case
+    console.log("Highlighting text:", searchText);
+  };
+
+  const clickByText = async (page: Page, text: string) => {
+    // Find all elements on the page
+    const allElements = await page.$$("body *");
+
+    // Iterate through each element to find the one with matching text
+    for (const element of allElements) {
+      const elementText = await (
+        await element.getProperty("textContent")
+      ).jsonValue();
+      if (elementText && elementText.trim() === text) {
+        await element.click();
+        console.log("Clicked on the element with text:", text);
+        break; // Stop iterating after clicking the first matching element
+      }
+    }
+  };
+
+  const clickFilename = async (page: Page, filename: string) => {
+    await page.click(`div[aria-label="${filename}"]`);
+    await simulateKeyboardPause();
+  };
+
+  const clickEditor = async (page: Page) => {
+    // click element with class "view-lines monaco-mouse-cursor-text"
+    await page.click(".view-lines");
+    await simulateKeyboardPause();
+  }
+
+  const openTerminal = async (page: Page) => {
+    // press control shift back tick
+    await page.keyboard.down("Control");
+    await page.keyboard.down("Shift");
+    await page.keyboard.press("`");
+    await page.keyboard.up("Control");
+    await page.keyboard.up("Shift");
+    await simulateKeyboardPause();
+  }
+
+  const clickTerminal = async (page: Page) => {
+    // the the element with class "xterm-link-layer"
+    await page.click(".xterm-link-layer");
+    await simulateKeyboardPause();
+  }
+
+  let times = parseInt(action.value) || 1;
+  console.log("times", times);
+  for (let i = 0; i < times; i++) {
+    switch (action.name) {
+      case "arrow-down":
+        await simulateArrowDown();
+        break;
+      case "arrow-up":
+        await simulateArrowUp();
+        break;
+      case "tab":
+        await simulateTab();
+        break;
+      case "arrow-left":
+        await simulateArrowLeft();
+        break;
+      case "arrow-right":
+        await simulateArrowRight();
+        break;
+      case "enter":
+        await simulateEnter();
+        break;
+      case "delete-line":
+        console.log("deleting line");
+        // Implement deleting line logic based on your specific use case
+        break;
+      case "command-right":
+        // Simulate moving to the end of the current line
+        await page.keyboard.down("Control");
+        await page.keyboard.press("ArrowRight");
+        await page.keyboard.up("Control");
+        await simulateKeyboardPause();
+        break;
+      case "highlight-code":
+        await simulateHighlightText(action.value);
+        break;
+      case "space":
+        await simulateSpace();
+        break;
+      case "backspace":
+        await simulateBackspace();
+        break;
+      case "type-editor":
+        await simulateTyping(action.value);
+        break;
+      case "click-filename":
+        await clickFilename(page, action.value);
+        break;
+      case "click-editor":
+        await clickEditor(page);
+        break;
+      case "open-terminal":
+        await openTerminal(page);
+        break;
+        case "click-terminal":
+        await clickTerminal(page);
+        break;
+      case "type-terminal":
+        await simulateTyping(action.value);
+        break;
+      default:
+        break;
+    }
+  }
+};
+import fs from 'fs';
+import  path  from 'path';
+import { exec } from "child_process";
+
+export const addAudioToVideo = async (
+  id: string,
+  videoFolder: string,
+  videoFile: string,
+  audioFile: string
+): Promise<void> => {
+  const videoFileNoExtension = path.basename(videoFile, path.extname(videoFile));
+  const combinedVideoFileName = `${videoFolder}/${id}-combined.mp4`;
+  const convert = new Promise<void>((resolve, reject) => {
+    const ffmpegCommand = `ffmpeg -i ${videoFile} -i ${audioFile}/combined.mp3 -c:v copy -map 0:v:0 -map 1:a:0 -shortest ${combinedVideoFileName} -y`;
+    console.log(`Executing FFmpeg command: ${ffmpegCommand}`)
+    exec(ffmpegCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing ffmpeg command: ${error.message}`);
+        reject(error);
+      } else {
+        console.log(`FFmpeg command executed successfully.`);
+        resolve();
+      }
+    });
+  });
+  await convert;
+
+  // now get rid of final by renaming it and overwriting the original video file
+  fs.renameSync(`${combinedVideoFileName}`, videoFile);
+  console.log(`Video file '${videoFileNoExtension}.mp4' created successfully.`);
+};
+import { exec } from 'child_process';
+
+export const buildAudioFile = (audioFolderPath: string, audioFiles: string[], audioStartTimes: number[]): Promise<void> => {
+  console.log("Combining audio files...")
+
+  // reduce each start time by the first start time
+  // TODO: figure out this audio start delay thing once and for all
+  const trueAudioStartTimes = audioStartTimes.map((time, index) => {
+    if (index === 0) {
+      return time - audioStartTimes[0]
+    } else {
+      return time - audioStartTimes[0] - 200
+    }});
+
+  return new Promise<void>((resolve, reject) => {
+    const inputFiles = audioFiles.map((file, index) => `-i ${file}`).join(' ');
+
+    const filterComplex = trueAudioStartTimes
+      .map((delay, index) => `[${index}]adelay=${delay}:all=true[a${index}];`)
+      .join(' ');
+
+    const amix = audioStartTimes.map((_, index) => `[a${index}]`).join('');
+    
+    const ffmpegCommand = `ffmpeg ${inputFiles} -filter_complex "${filterComplex} ${amix}amix=inputs=${audioStartTimes.length}:normalize=0 [out]" -map "[out]" ${audioFolderPath}/combined.mp3 -async 1 -y`;
+
+    exec(ffmpegCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing ffmpeg command: ${error.message}`);
+        reject(error);
+      } else {
+        console.log(`Audio files combined successfully.`);
+        resolve();
+      }
+    });
+  });
+}import os from "os";
+import fs from "fs";
+import {
+  IAction,
+  isSpeakAction,
+  TextToSpeechOptions,
+} from "@fullstackcraftllc/codevideo-types";
+import { saveToFileSay } from "../say/saveToFileSay.js";
+import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { saveToFileOpenAI } from "../openai/saveToFileOpenAI.js";
+import { saveToFileFestival } from "../festival/saveToFileFestival.js";
+import { saveToFileCoquiAi } from "../coqui-ai-tts/saveToFileCoquiAi.js";
+
+// loop over each step, converting "script" property to audio with say
+export const convertSpeakActionsToAudio = async (
+  actions: Array<IAction>,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  textToSpeechOption: TextToSpeechOptions,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
+  const audioFiles: Array<string> = [];
+
+  // get all speak actions
+  const speakActions = actions.filter(isSpeakAction);
+
+  console.log(
+    `Of the ${actions.length} actions, ${speakActions.length} are speak actions.`
+  );
+
+  for (let i = 0; i < speakActions.length; i++) {
+    if (!isSpeakAction(speakActions[i])) {
+      continue;
+    }
+    // id of the audio file is the sha-256 hash of the text
+    const hash = sha256Hash(speakActions[i].value);
+    const index = i + 1;
+    console.log(
+      `Converting text at step index ${index} to audio... (hash is ${hash})`
+    );
+    const textToSpeak = speakActions[i].value;
+
+    const platform = os.platform();
+    if (platform === "linux" && textToSpeechOption === "sayjs") {
+      console.log("sayjs is not supported on linux");
+      throw new Error("sayjs is not supported on linux");
+    }
+
+    // create audio folder if it doesn't exist
+    if (!fs.existsSync(audioFolderPath)) {
+      fs.mkdirSync(audioFolderPath, { recursive: true });
+    }
+
+    // free version with say (installed outofthebox on mac)
+    switch (textToSpeechOption) {
+      case "coqui-ai":
+        await saveToFileCoquiAi(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite
+        );
+      case "festival":
+        await saveToFileFestival(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite
+        );
+      case "sayjs":
+        await saveToFileSay(hash, textToSpeak, audioFolderPath, forceOverwrite);
+        break;
+      case "elevenlabs":
+        // real version with professional voice from elevenlabs
+        await saveToFileElevenLabs(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite,
+          ttsApiKey,
+          ttsVoiceId
+        );
+        break;
+      case "openai":
+        // tts with open OpenAI
+        await saveToFileOpenAI(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite,
+          ttsApiKey,
+          ttsVoiceId
+        );
+        break;
+      default:
+        console.error(`Invalid text to speech option '${textToSpeechOption}'`);
+        break;
+    }
+    audioFiles.push(`${audioFolderPath}/${hash}.mp3`);
+  }
+  return audioFiles;
+};
+import * as fs from "fs/promises";
+import * as path from "path";
+import * as util from "util";
+import { exec } from "child_process";
+
+const execPromise = util.promisify(exec);
+
+export const convertWavToMp3AndDeleteWav = async (wavFile: string, forceOverwrite: boolean) => {
+  try {
+      const folderToWriteTo = path.dirname(wavFile);
+      const outputFilePath = path.join(
+        folderToWriteTo,
+        `${path.parse(wavFile).name}.mp3`
+      );
+
+      const command = `ffmpeg -i "${wavFile}" -codec:a libmp3lame -q:a 2 "${outputFilePath}"`;
+
+      console.log("Executing FFmpeg command:", command);
+
+      // Execute FFmpeg command
+      const { stdout, stderr } = await execPromise(command);
+      
+      // Delete the original wav file
+      await fs.unlink(wavFile);
+
+      console.log(`Conversion for ${wavFile} completed. Original wav file deleted.`);
+      console.log("FFmpeg command output:", stdout);
+      console.error("FFmpeg command error:", stderr);
+    
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
+import { execSync } from "child_process";
+
+export const getAudioDuration = (audioFilePath: string): number => {
+  const result = execSync(
+    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${audioFilePath}`
+  );
+  return parseFloat(result.toString());
+};
+import { IAudioFile } from "@fullstackcraftllc/codevideo-types";
+import fs from "fs";
+import path from "path";
+
+export const readAudioFiles = async (
+  audioFolderPath: string
+): Promise<IAudioFile[]> => {
+  try {
+    const files = await fs.promises.readdir(audioFolderPath);
+    const audioFiles: IAudioFile[] = [];
+
+    for (const file of files) {
+      const filePath = path.join(audioFolderPath, file);
+      if (fs.statSync(filePath).isFile()) {
+        audioFiles.push({ path: filePath });
+      }
+    }
+
+    return audioFiles;
+  } catch (error) {
+    console.error("Error reading audio files:", error);
+    return [];
+  }
+};
+import fs from "fs";
+import * as util from "util";
+import { exec } from "child_process";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav.js";
+
+const execPromise = util.promisify(exec);
+
+export const saveToFileCoquiAi = async (
+  id: string,
+  text: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean
+) => {
+  console.log(`Writing audio file to ${audioFolderPath}`);
+  const filePath = `${audioFolderPath}/${id}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${id} already exists. Skipping...`);
+    return;
+  }
+
+  const wavFile = `${audioFolderPath}/${id}.wav`;
+  // escape double and single quotes
+  text = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
+  // TODO: fix potential security issue with shell injection
+  await execPromise('tts --text "' + text + '" --out_path ' + wavFile);
+  await convertWavToMp3AndDeleteWav(wavFile, forceOverwrite);
+  console.log(`Script for step ${id} converted to audio with say.`);
+};
+import fs from "fs";
+import fetch from "isomorphic-fetch";
+
+interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+}
+
+interface TextToSpeechRequest {
+  text: string;
+  model_id: string;
+  voice_settings: VoiceSettings;
+}
+
+// eleven lab's can't handle reading of "C#" very well
+const customTransforms: Record<string, string> = {
+  "C#": "C sharp",
+};
+
+export const saveToFileElevenLabs = async (
+  filename: string,
+  textToSpeak: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
+  // apply custom transforms to the text
+  for (const key in customTransforms) {
+    if (textToSpeak.includes(key)) {
+      textToSpeak = textToSpeak.replace(
+        new RegExp(key, "g"),
+        customTransforms[key]
+      );
+    }
+  }
+
+  // if the file exists already, don't do anything - save money :)
+  const filePath = `${audioFolderPath}/${filename}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${filename} already exists. Skipping...`);
+    return;
+  }
+
+  // headers for elevenlabs
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "xi-api-key": ttsApiKey || "",
+    Accept: "audio/mpeg",
+  };
+
+  const body: TextToSpeechRequest = {
+    text: textToSpeak,
+    model_id: "eleven_turbo_v2",
+    voice_settings: {
+      stability: 0.5,
+      similarity_boost: 0.95,
+    },
+  };
+
+  try {
+    // elli voice id MF3mGyEYCl7XYWbV9V6O
+    // Chris voice (my own professional voice) id 1RLeGxy9FHYB5ScpFkts
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${
+        ttsVoiceId || ""
+      }`,
+      {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    // return the byte data generated by elevenlabs' boss bots
+    // return await response.arrayBuffer();
+
+    // write the byte data to an mp3 file
+    const buffer = await response.arrayBuffer();
+    const filePath = `${audioFolderPath}/${filename}.mp3`;
+
+    // write the file with fs
+    fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(
+      `Script for step ${filename} converted to audio with Eleven Labs.`
+    );
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const enterAndUpActions: Array<IAction> = [
+  {
+    name: "enter",
+    value:
+      "1",
+  },
+  {
+    name: "enter",
+    value:
+      "1",
+  },
+  {
+    name: "enter",
+    value:
+      "1",
+  },
+  {
+    name: "arrow-up",
+    value:
+      "1",
+  },
+  {
+    name: "arrow-up",
+    value:
+      "1",
+  },
+  {
+    name: "arrow-up",
+    value:
+      "1",
+  }
+];
+
+export default enterAndUpActions;import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const enumExtensionsActions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value:
+      "In this article, we'll explore how to enhance your C# enums with two useful extensions in a generic manner.",
+  },
+  {
+    name: "type-editor",
+    value: "public static class EnumExtensions {\n\n}",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Let's begin by creating the first functionality - obtaining a human-readable representation of enum values.",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "public static string GetDescriptionFromAttribute(this Enum value) {\n\n}",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value: "  var fieldInfo = value.GetType().GetField(value.ToString());",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value: "  if (fieldInfo == null) return value.ToString();",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  return attributes.Any() ? attributes[0].Description : value.ToString();",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Now, let's move on to the second functionality - parsing a string into an enum value.",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "public static T CustomParse<T>(string? stringValue, T defaultValue) where T : Enum {\n\n}",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value: "  if (stringValue == null) return defaultValue;",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value: "  var enumType = typeof(T);",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value: "  foreach (var fieldInfo in enumType.GetFields()) {\n\n}",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value:
+      "    var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "    if (attributes.Any() && attributes[0].Description == stringValue)",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value: "      return (T)fieldInfo.GetValue(null)!;",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "    if (fieldInfo.Name == stringValue) return (T)fieldInfo.GetValue(null)!;",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value: "  return defaultValue;",
+  },
+  {
+    name: "speak-before",
+    value:
+      "And that's it! We've successfully created two helpful enum extensions. Happy coding!",
+  },
+];
+
+export default enumExtensionsActions;import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const fibonacciActions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value:
+      "In this quick tutorial, we'll walk through the creation of a Fibonacci calculation function in TypeScript.",
+  },
+  {
+    name: "type-editor",
+    value: "// fibonacci.ts\n",
+  },
+  {
+    name: "speak-before",
+    value:
+      "We'll just leave a comment hear to signify that this file is called fibonacci.ts.",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Now, let's define the function signature. We want our function to calculate the nth Fibonacci number, so our function will take a single parameter 'n' of type 'number', which represents the position in the Fibonacci sequence, and also return a number.",
+  },
+  {
+    name: "type-editor",
+    value: "const fibonacci = (n: number): number => {\n\n}",
+  },
+  {
+    name: "speak-before",
+    value:
+      "To help others understand our code, let's add a brief JS Doc comment explaining the purpose of the function and the meaning of the 'n' parameter.",
+  },
+  {
+    name: "arrow-up",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "/**\n * Calculates the nth Fibonacci number.\n * @param n The position in the Fibonacci sequence.\n */\n",
+  },
+  {
+    name: "speak-before",
+    value: "Now, let's implement the Fibonacci logic inside our function.",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  if (n <= 1) return n;\n  return fibonacci(n - 1) + fibonacci(n - 2);",
+  },
+  {
+    name: "speak-before",
+    value:
+      "This is a recursive implementation of the Fibonacci sequence. If 'n' is '0' or '1', we return 'n'. Otherwise, we recursively call the Fibonacci function for n minus 1 and n minus 2, then add them together.",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Now, this function would work, but it's not very performant. We can use memoization to optimize the performance of our Fibonacci function.",
+  },
+  {
+    name: "delete-line",
+    value: "1",
+  },
+  {
+    name: "arrow-up",
+    value: "1",
+  },
+  {
+    name: "delete-line",
+    value: "1",
+  },
+  {
+    name: "enter",
+    value: "1",
+  },
+  {
+    name: "arrow-up",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  const memo: Record<number, number> = {};\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return memo[n] = fibonacci(n - 1) + fibonacci(n - 2);",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Here, we've introduced a 'memo' object to store previously calculated Fibonacci values. This reduces redundant calculations and improves the efficiency of our function. Great! We've successfully created a Fibonacci calculation function in TypeScript using a recursive approach with memoization. Until next time - cheers!",
+  },
+];
+
+export default fibonacciActions;import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const sumActions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value:
+      "In this lesson, we're going to create a simple sum function in typescript.",
+  },
+  {
+    name: "speak-before",
+    value: "Let's start with the signature of the function.",
+  },
+  {
+    name: "type-editor",
+    value: "const sum = (a: number, b: number) => {\n\n}",
+  },
+  {
+    name: "speak-before",
+    value: "We probably should add a short js doc comment to the function.",
+  },
+  {
+    name: "arrow-up",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value:
+      "/**\n * Adds two numbers together.\n * @param a The first number to add.\n * @param b The second number to add.\n */\n",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Finally, we'll add the body of the function. For such a simple function, not much more discussion is needed, we just use the built in 'plus' operator to return the sum of a and b.",
+  },
+  {
+    name: "type-editor",
+    value: "  return a + b;",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "speak-before",
+    value:
+      "However, there is a small refactoring we can make. Since we're using an arrow function and have a single line which is our return statement, we can remove the curly braces and 'return' keyword.",
+  },
+  {
+    name: "highlight-code",
+    value: "{\n  return a + b;\n};",
+  },
+  {
+    name: "speak-before",
+    value: "Let's do the actual refactoring now.",
+  },
+  {
+    name: "backspace",
+    value: "19",
+  },
+  {
+    name: "type-editor",
+    value: " a + b;",
+  },
+  {
+    name: "speak-before",
+    value:
+      "This is called an implicit return. It's a nice way to make code shorter and more readable for simple functions like this one.",
+  },
+  {
+    name: "speak-before",
+    value: "And that's it! We've created a simple sum function in TypeScript. Congrats!",
+  },
+];
+
+export default sumActions;import fs from "fs";
+import * as util from "util";
+import { exec } from "child_process";
+const execPromise = util.promisify(exec);
+
+export const saveToFileFestival = async (
+  id: string,
+  text: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean
+) => {
+  console.log(`Writing audio file to ${audioFolderPath}`);
+  const filePath = `${audioFolderPath}/${id}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${id} already exists. Skipping...`);
+    return;
+  }
+  console.log(`Writing audio file to ${filePath}`);
+
+  // escape double and single quotes
+  text = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
+  // TODO: fix potential security issue with shell injection
+  await execPromise("echo " + text + " | text2wave | lame - " + filePath);
+  console.log(`Script for step ${id} converted to audio with festival.`);
+};
+export { VideoGenerator } from "./VideoGenerator/VideoGenerator.js";
+export { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+export { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";import { IAction, ProgrammingLanguages, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+
+export interface IGenerateVideoFromActionsOptions {
+    actions: Array<IAction>,
+    language: ProgrammingLanguages,
+    textToSpeechOption: TextToSpeechOptions,
+    initialCode?: string,
+    ttsApiKey?: string;
+    ttsVoiceId?: string;
+    guid?: string,
+  }import path from "path";
+import fs from "fs";
+import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+
+export const loadActions = async (): Promise<{
+  url: string;
+  actions: Array<IAction>;
+  videoFile: string;
+  currentWorkingDirectory: string;
+  actionsAudioDirectory: string;
+  actionsVideoDirectory: string;
+  textToSpeechOption: TextToSpeechOptions
+}> => {
+  // first argument to this script is the path to the actions file
+  if (process.argv.length < 3) {
+    console.error("Please provide a path to the actions file");
+    process.exit(1);
+  }
+
+  // if we have a 4th argument, then we know we have a text to speech option
+  let textToSpeechOption: TextToSpeechOptions = "sayjs";
+  if (process.argv.length === 4) {
+    textToSpeechOption = process.argv[3] as TextToSpeechOptions;
+  }
+
+  const inputStepsFilePath = process.argv[2];
+  const actions: Array<IAction> = [];
+  const currentWorkingDirectory = process.cwd();
+
+  // join the actions file path with the current working directory
+  const actionsFilePath = path.join(
+    currentWorkingDirectory,
+    inputStepsFilePath
+  );
+
+  // ensure the file exist relative to the current working directory
+  if (!fs.existsSync(actionsFilePath)) {
+    console.error(`File not found: ${actionsFilePath}`);
+    process.exit(1);
+  }
+
+  // try typescript first
+  if (inputStepsFilePath.endsWith(".ts")) {
+    // dynamically require the typescript file
+    const {default: typeScriptActions} = await import(actionsFilePath);
+
+    // if it's null, throw error that they need to use 'export default' syntax
+    if (typeScriptActions === null) {
+      console.error(
+        "Failed to load TypeScript actions. Use 'export default' syntax in your typescript file to export the actions."
+      );
+      process.exit(1);
+    }
+
+    actions.push(...typeScriptActions);
+  } else if (inputStepsFilePath.endsWith(".json")) {
+    // we can safely require the actions file
+    const {default: jsonActions} = await import(actionsFilePath, { assert: { type: "json" } });
+    actions.push(...jsonActions);
+  } else {
+    console.error(
+      "Please provide a path to a .ts or .json file with your actions"
+    );
+    process.exit(1);
+  }
+
+  console.log(`Found ${actions.length} actions in file ${actionsFilePath}`);
+  const fileNameWithoutExtension = path.basename(
+    actionsFilePath,
+    path.extname(actionsFilePath)
+  );
+  const actionsAudioDirectory = `${currentWorkingDirectory}/audio/${fileNameWithoutExtension}`;
+  const actionsVideoDirectory = `${currentWorkingDirectory}/video/${fileNameWithoutExtension}`;
+  const url = `file://${currentWorkingDirectory}/editor.html`;
+  const videoFile = `./video/${fileNameWithoutExtension}.mp4`;
+
+  // if we see at least one 'type-terminal' action, then we know this has to run on a codespaces
+  // if (actions.map((a) => a.name).includes("type-terminal")) {
+  //   url = `https://prod.liveshare.vsengsaas.visualstudio.com/join?049AB4AD9BC16BE338A13263281272C72C49`;
+  // }
+
+  return {
+    url,
+    actions,
+    currentWorkingDirectory,
+    videoFile,
+    actionsAudioDirectory,
+    actionsVideoDirectory,
+    textToSpeechOption
+  };
+};
+import puppeteer, { Page } from "puppeteer";
+import fs from "fs";
+import { executeActionForMonacoLocalhost } from "./actions/executeActionForMonacoLocalhost.js";
+import { addAudioToVideo } from "./audio/addAudioToVideo.js";
+import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
+import { buildAudioFile } from "./audio/buildAudioFile.js";
+import { loadActions } from "./io/loadActions.js";
+import { sha256Hash } from "./utils/sha256Hash.js";
+import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+
+let trueAudioStartTime = 0;
+
+// loading from json file, do it like this:
+const {
+  actions,
+  url,
+  videoFile,
+  actionsAudioDirectory,
+  textToSpeechOption,
+} = await loadActions();
+
+// for a typescript file, the actions are loaded from the typescript.json file
+// const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('typescript');
+
+// create a file in audio/{fileNameWithoutExtension} if it doesn't already exist
+if (!fs.existsSync(actionsAudioDirectory)) {
+  fs.mkdirSync(actionsAudioDirectory);
+}
+
+// keep track of start times for the audio readAudioFiles
+const audioStartTimes: Array<number> = [];
+
+//  audio playback logic
+// TODO: would be nice to move in with executeAction, but the page makes a closure
+const playAudioInPuppeteer = async (
+  page: Page,
+  audioHash: string,
+  filePath: string
+) => {
+  const scriptContent = `
+    window.audioPlaybackPromiseResolved = false;
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
+
+    audio${audioHash}.addEventListener('ended', () => {
+      window.audioPlaybackPromiseResolved = true;
+    });
+  `;
+
+  // Add the script tag to the page
+  await page.addScriptTag({ content: scriptContent });
+
+  // add the start time to the array
+  const startTime = Math.round(performance.now()) - trueAudioStartTime;
+  console.log(
+    `audio ${audioHash} (${filePath}) start time set to: ${startTime}`
+  );
+  audioStartTimes.push(startTime);
+  // Wait for the audio playback to complete
+  await page.waitForFunction(
+    () => (window as any).audioPlaybackPromiseResolved === true
+  );
+};
+
+const runPuppeteerAutomation = async (url: string) => {
+  console.log("recording video...");
+  // then run the automation
+  const browser = await puppeteer.launch({
+    headless: "new", 
+    // devtools: true, // for debugging
+    // executablePath:
+    //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    defaultViewport: {
+      width: 1920,
+      height: 1080,
+    },
+  });
+  const page = await browser.newPage();
+  await page.goto(url);
+  await page.setViewport({
+    width: 1920,
+    height: 1080,
+  });
+
+  // Wait for the Monaco Editor to load
+  await page.waitForFunction(() => (window as any).monaco !== undefined);
+
+  // create and start the recording
+  const recorder = new PuppeteerScreenRecorder(page);
+  await recorder.start(videoFile);
+
+  // add a 2 second delay before starting the steps
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  // before beginning steps, save what current time we are in execution of this program
+  // needed for accurately calculating the audio start times
+  //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
+
+  // Automation commands based on steps
+  for (let i = 0; i < actions.length; i++) {
+    // treat index as 'step id'
+    const id = i + 1;
+    const action = actions[i];
+    console.log(`Step ${id} action: ${action.name}`);
+
+    const audioHash = sha256Hash(action.value);
+
+    // special case is audio playback
+    if (action.name === "speak-before") {
+      await playAudioInPuppeteer(
+        page,
+        audioHash,
+        `${actionsAudioDirectory}/${audioHash}.mp3`
+      );
+      continue;
+    } else if (action.name === "speak-during") {
+      // use promise.all to play audio and execute action at the same time
+      await Promise.all([
+        playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${actionsAudioDirectory}/${audioHash}.mp3`
+        ),
+        executeActionForMonacoLocalhost(page, id, action),
+      ]);
+    } else if (action.name === "type-terminal") {
+    } else {
+      await executeActionForMonacoLocalhost(page, id, action);
+    }
+
+    console.log(`Step ${id} complete`);
+  }
+
+  // wait 15 more seconds for any audio to finish playing
+  await new Promise((resolve) => setTimeout(resolve, 15000));
+
+  // stop the recording
+  await recorder.stop();
+
+  // Close the browser
+  await browser.close();
+
+  console.log("video recorded");
+};
+
+const main = async () => {
+  try {
+    // first convert scripts to audio
+    const audioFiles = await convertSpeakActionsToAudio(
+      actions,
+      actionsAudioDirectory,
+      false,
+      textToSpeechOption
+    );
+
+    // then run the puppeteer automation
+    await runPuppeteerAutomation(url);
+
+    // now that we have the offset delays for each audio, build the audio file
+    await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+
+    // then combine the audio and video files
+
+    // TODO: quick fix for videoDirectory is the videoFile without the file name
+    const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+
+    await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
+  } catch (error) {
+    console.error("MAIN ERROR:", error);
+  }
+};
+
+// Call the main function to start the automation
+main();import { addAudioToVideo } from "./audio/addAudioToVideo.js";
+import { buildAudioFile } from "./audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
+import { loadActions } from "./io/loadActions.js";
+import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
+
+const makeVideo = async () => {
+  const { actions, url, videoFile, actionsAudioDirectory, textToSpeechOption } =
+    await loadActions();
+
+  // first convert scripts to audio
+  const audioFiles = await convertSpeakActionsToAudio(
+    actions,
+    actionsAudioDirectory,
+    false,
+    textToSpeechOption
+  );
+
+  // then run the puppeteer automation, which records the video and returns the start times of each audio
+  const audioStartTimes = await runPuppeteerAutomation(
+    url,
+    videoFile,
+    actions,
+    actionsAudioDirectory,
+    'monaco-single-editor'
+  );
+
+  // now that we have the offset delays for each audio, build the audio file
+  await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+
+  // then combine the audio and video files
+  // TODO: quick fix for videoDirectory is the videoFile without the file name
+  const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+  await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
+};
+
+makeVideo();
+import fs from "fs";
+import fetch from "isomorphic-fetch";
+
+interface OpenAITTSRequest {
+  model: string;
+  voice: string;
+  input: string;
+  response_format: string;
+  speed: number;
+}
+
+export const saveToFileOpenAI = async (
+  filename: string,
+  textToSpeak: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
+  const filePath = `${audioFolderPath}/${filename}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${filename} already exists. Skipping...`);
+    return;
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${ttsApiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const data: OpenAITTSRequest = {
+    model: "tts-1",
+    voice: ttsVoiceId || "echo",
+    input: textToSpeak,
+    response_format: "mp3",
+    speed: 1.0,
+  };
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    // write the byte data to an mp3 file
+    const buffer = await response.arrayBuffer();
+    const filePath = `${audioFolderPath}/${filename}.mp3`;
+
+    // write the file with fs
+    fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(`Script for step ${filename} converted to audio with Open AI.`);
+  } catch (error) {
+    console.error(error);
+  }
+};
+import OpenAI from "openai";
+import fs from "fs";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export const speechToText = async (audioFile: string) => {
+  try {
+    const transcript = await client.audio.transcriptions.create({
+      file: fs.createReadStream(audioFile),
+      model: "whisper-1"
+    });
+    return transcript.text;
+  } catch (error) {
+    console.error(`Error with file ${audioFile}: ${error}`);
+    return "";
+  }
+};
+import { Page } from "puppeteer";
+
+export const playAudioInPuppeteer = async (
+    page: Page,
+    audioHash: string,
+    filePath: string
+  ): Promise<number> => {
+    const scriptContent = `
+    window.audioPlaybackPromiseResolved = false;
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
+
+    audio${audioHash}.addEventListener('ended', () => {
+      window.audioPlaybackPromiseResolved = true;
+    });
+  `;
+
+    // Add the script tag to the page
+    await page.addScriptTag({ content: scriptContent });
+
+    // add the start time to the array
+    const audioStartTime = Math.round(performance.now());
+    console.log(
+      `audio ${audioHash} (${filePath}) start time set to: ${audioStartTime}`
+    );
+    
+    // Wait for the audio playback to complete
+    await page.waitForFunction(
+      () => (window as any).audioPlaybackPromiseResolved === true
+    );
+
+    return audioStartTime;
+  };import { IAction, ActionEnvironment } from "@fullstackcraftllc/codevideo-types";
+import puppeteer from "puppeteer";
+import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+import { executeActionForMonacoLocalhost } from "../actions/executeActionForMonacoLocalhost.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { playAudioInPuppeteer } from "./playAudioInPuppeteer.js";
+import { executeActionForVisualStudioCodeLocalhost } from "../actions/executeActionForVisualStudioCodeLocalhost.js";
+
+
+const resolveActionRunnerFunction = (actionEnvironment: ActionEnvironment) => {
+  switch (actionEnvironment) {
+    case 'monaco-single-editor':
+      return executeActionForMonacoLocalhost;
+    case 'visual-studio-code-web':
+      return executeActionForVisualStudioCodeLocalhost;
+    // case 'visual-studio-code-native':
+    //   // TODO:
+    //   return executeActionForVisualStudioCodeNative;
+    default:
+      throw new Error(`Action environment not supported: ${actionEnvironment}`);
+  }
+}
+
+export const runPuppeteerAutomation = async (url: string, videoFile: string, actions: Array<IAction>, actionsAudioDirectory: string, actionEnvironment: ActionEnvironment): Promise<Array<number>> => {
+  const actionRunnerFunction = resolveActionRunnerFunction(actionEnvironment);  
+  const audioStartTimes: Array<number> = [];
+    console.log("recording video...");
+    // then run the automation
+    const browser = await puppeteer.launch({
+      args: ["--disable-dev-shm-usage", "--no-sandbox"], // both flags needed for docker, see: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
+      // headless: "new",
+      headless: false, // for debugging
+      // devtools: true, // for debugging
+      // headless: "new",
+      // executablePath:
+      //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+    });
+    const page = await browser.newPage();
+    await page.goto(url);
+    await page.setViewport({
+      width: 1920,
+      height: 1080,
+    });
+
+    // create and start the recording
+    const recorder = new PuppeteerScreenRecorder(page);
+    await recorder.start(videoFile);
+
+    // add a 2 second delay before starting the steps
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // before beginning steps, save what current time we are in execution of this program
+    // needed for accurately calculating the audio start times
+    //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
+
+    // Automation commands based on steps
+    for (let i = 0; i < actions.length; i++) {
+      // treat index as 'step id'
+      const id = i + 1;
+      const action = actions[i];
+      console.log(`Step ${id} action: ${action.name}`);
+
+      const audioHash = sha256Hash(action.value);
+
+      // special case is audio playback
+      if (action.name === "speak-before") {
+        const audioStartTime = await playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${actionsAudioDirectory}/${audioHash}.mp3`
+        );
+        audioStartTimes.push(audioStartTime);
+        continue;
+      } else if (action.name === "speak-during") {
+        // use promise.all to play audio and execute action at the same time
+        const [audioStartTime, _] = await Promise.all([
+          playAudioInPuppeteer(
+            page,
+            audioHash,
+            `${actionsAudioDirectory}/${audioHash}.mp3`
+          ),
+          actionRunnerFunction(page, id, action),
+        ]);
+        audioStartTimes.push(audioStartTime);
+      } else if (action.name === "type-terminal") {
+      } else {
+        await actionRunnerFunction(page, id, action);
+      }
+
+      console.log(`Step ${id} complete`);
+    }
+
+    // wait 15 more seconds for any audio to finish playing
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+
+    // stop the recording
+    await recorder.stop();
+
+    // Close the browser
+    await browser.close();
+
+    console.log("video recorded");
+
+    // return the audio start times
+    return audioStartTimes;
+  };import say from "say";
+import fs from "fs";
+import os from "os";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav.js";
+
+export const saveToFileSay = async (
+  id: string,
+  text: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean
+) => {
+  console.log(`Writing audio file to ${audioFolderPath}`)
+  return new Promise<void>((resolve, reject) => {
+    const filePath = `${audioFolderPath}/${id}.mp3`;
+    if (fs.existsSync(filePath) && !forceOverwrite) {
+      console.log(`File with hash ${id} already exists. Skipping...`);
+      resolve(); // Resolve immediately if file exists and no force overwrite
+    } else {
+      const wavFile = `${audioFolderPath}/${id}.wav`;
+      const name = os.platform() === "win32" ? 'Microsoft David Desktop' : 'Daniel';
+      say.export(text, name, 1, wavFile, async (err) => {
+        if (err) {
+          console.error(err);
+          reject(err); // Reject promise if there's an error during export
+        } else {
+          try {
+            await convertWavToMp3AndDeleteWav(wavFile, forceOverwrite);
+            console.log(`Script for step ${id} converted to audio with say.`);
+            resolve(); // Resolve promise after conversion and deletion
+          } catch (error) {
+            reject(error); // Reject promise if there's an error during conversion/deletion
+          }
+        }
+      });
+    }
+  });
+};
+import { loadActions } from "../io/loadActions.js";
+import { identifyAndValidate } from "@fullstackcraftllc/syntax-spy";
+import { convertActionsToCodeActions } from "@fullstackcraftllc/codevideo-types";
+import { VirtualCodeBlock } from "@fullstackcraftllc/virtual-code-block";
+
+const codeHealthCheck = async () => {
+  // load in the steps.json file
+  const { actions } = await loadActions();
+
+  // get code actions
+  const codeActions = convertActionsToCodeActions(actions);
+
+  // create a virtual code block and apply the code actions to it
+  const virtualCodeBlock = new VirtualCodeBlock([]);
+  virtualCodeBlock.applyActions(codeActions);
+  const finalCode = virtualCodeBlock.getCode();
+
+  // use syntax-spy to identify and validate the code
+  const { language, isValid, error } = await identifyAndValidate(finalCode);
+  if (error) {
+    console.error("Error:", error);
+  } else {
+    console.log("Detected language:", language);
+    console.log("Syntax is valid:", isValid);
+  }
+};
+
+
+codeHealthCheck();
+import { convertActionsToSpeakActions } from "@fullstackcraftllc/codevideo-types";
+import { loadActions } from "../io/loadActions.js";
+
+const scriptChartCount = async () => {
+  // load in the steps.json file
+  const { actions } = await loadActions();
+
+  const speakActions = convertActionsToSpeakActions(actions);
+
+  // use reduce to count the characters in the'value' property of each speak action
+  const characterCount = speakActions.map(a => a.value).reduce((a, b) => a + b.length, 0);
+  const wordCount = Math.round(characterCount / 5);
+  const pageCount = (wordCount / 500).toFixed(1);
+
+  // log the results
+  console.log(`Total character count in scripts: ${characterCount}`);
+  console.log(`Total word count in scripts: ${wordCount}`);
+  console.log(`Total page count in scripts: ${pageCount}`);
+};
+
+scriptChartCount();
+import { IAction, isSpeakAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+import { preprocessStringForComparison } from "../utils/preprocessStringForComparison.js";
+import { loadActions } from "../io/loadActions.js";
+import { speechToText } from "../openai/speechToText.js";
+import { levenshteinDistance } from "../utils/levenshteinDistance.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+
+const distanceThreshold = 0;
+
+const scriptsHealthCheck = async () => {
+  // load in the actions file
+  const { actions, actionsAudioDirectory, textToSpeechOption } = await loadActions();
+
+  // for each script, generate the transcript with OpenAI whisper, 
+  // then compare the original text with the resulting transcript using levenshtein distance
+  for (let i = 0; i < actions.length; i++) {
+    const textHash = sha256Hash(actions[i].value);
+    const action = actions[i];
+
+    if (isSpeakAction(action)) {
+      await checkForArtifacts(textHash, action, actionsAudioDirectory, textToSpeechOption);
+    }
+  }
+};
+
+const checkForArtifacts = async (
+  textHash: string,
+  action: IAction,
+  stepsAudioPath: string,
+  textToSpeechOption: TextToSpeechOptions
+) => {
+  // generate transcript
+  const textToSpeak = action.value;
+  const transcript = await speechToText(`${stepsAudioPath}/${textHash}.mp3`);
+  if (!transcript) {
+    console.log(
+      `Script with hash ${textHash}: Error creating transcript from audio file (${stepsAudioPath}/${textHash}.mp3)`
+    );
+    return;
+  }
+  // first preprocess the texts (all to lowercase and removing any non a-z0-9 characters) compare with levenshtein distance
+  const distance = levenshteinDistance(
+    preprocessStringForComparison(textToSpeak),
+    preprocessStringForComparison(transcript)
+  );
+  // if the levenshtein distance is greater than distanceThreshold, log the results
+  if (distance > distanceThreshold) {
+    console.log("WARNING - POTENTIAL ARTIFACTS DETECTED!");
+    console.log(
+      `Text hash: ${textHash}:\nOriginal: ${textToSpeak}\nTranscript: ${transcript}\nLevenshtein distance: ${distance}`
+    );
+    // and regenerate the audio for this step
+    console.log(`Regenerating audio for step ${textHash}...`);
+    if (isSpeakAction(action)) {
+      await convertSpeakActionsToAudio([action], stepsAudioPath, true, textToSpeechOption);
+    }
+  } else {
+    console.log(
+      `Text hash: ${textHash}: No artifacts detected. (Levenshtein distance: ${distance})`
+    );
+  }
+};
+
+scriptsHealthCheck();
+import fs from "fs";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
+
+const main = async () => {
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    actions: [
+    {
+      name: "speak-before",
+      value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "speak-before",
+      value: "Yeah, I'm pretty much awesome.",
+    },
+  ],
+  language: "javascript",
+  textToSpeechOption: "coqui-ai",
+  };
+
+  // use promise.all to run multiple instances of the function concurrently
+  const promises = Array.from({ length: 10 }, () => generateVideoFromActions(videoOptions));
+  await Promise.all(promises);
+};
+
+main();
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
+
+const main = async () => {
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    initialCode: "// here's a comment at the top of the file\n\n// and another two lines later\n\n// and another\n",
+    actions: [
+      {
+        name: "speak-before",
+        value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "speak-before",
+        value: "Yeah, I'm pretty much awesome.",
+      },
+    ],
+    language: "javascript",
+    textToSpeechOption: "elevenlabs",
+    ttsApiKey: process.env.ELEVEN_LABS_API_KEY,
+    ttsVoiceId: process.env.ELEVEN_LABS_VOICE_ID,
+  };
+
+  // use promise.all to run multiple instances of the function concurrently
+  await generateVideoFromActions(videoOptions);
+};
+
+main();
+import fs from "fs";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
+
+const main = async () => {
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    actions: [
+      {
+        name: "speak-before",
+        value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "def my_awesome_python_function():\n\t# some code here...",
+      },
+      {
+        name: "speak-before",
+        value: "Yeah, I'm pretty much awesome.",
+      },
+    ],
+    language: "python",
+    textToSpeechOption: "openai",
+    ttsApiKey: process.env.OPENAI_API_KEY,
+    ttsVoiceId: "shimmer",
+  };
+
+  await generateVideoFromActions(videoOptions);
+};
+
+main();
+import fs from "fs";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+
+const main = async () => {
+  const actions: Array<IAction> = [
+    {
+      name: "speak-before",
+      value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "speak-before",
+      value: "Yeah, I'm pretty much awesome.",
+    },
+  ];
+
+  const {videoBuffer} = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
+  fs.writeFileSync("visual-studio-driver.mp4", videoBuffer);
+};
+
+main();
+import puppeteer, { Page } from "puppeteer";
+import fs from "fs";
+import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+import { executeActionForMonacoLocalhost } from "../actions/executeActionForMonacoLocalhost.js";
+import { addAudioToVideo } from "../audio/addAudioToVideo.js";
+import { buildAudioFile } from "../audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { loadActions } from "../io/loadActions.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+
+export class VideoGenerator {
+  private trueAudioStartTime = 0;
+  private actions: Array<IAction> = [];
+  private url = "";
+  private actionsAudioDirectory = "";
+  private forceOverwriteAudioFiles = false;
+  private textToSpeechOption: TextToSpeechOptions = "sayjs";
+  private videoFile = "";
+  private audioStartTimes: Array<number> = [];
+
+  // in constructor, set all the properties
+  initialize = async () => {
+    const {
+      actions,
+      url,
+      videoFile,
+      actionsAudioDirectory,
+      textToSpeechOption,
+    } = await loadActions();
+
+    // create audio directory if it doesn't exist
+    if (!fs.existsSync(actionsAudioDirectory)) {
+      fs.mkdirSync(actionsAudioDirectory);
+    }
+
+    this.actions = actions;
+    this.url = url;
+    this.actionsAudioDirectory = actionsAudioDirectory;
+    this.textToSpeechOption = textToSpeechOption;
+    this.videoFile = videoFile;
+  }
+
+  //  audio playback logic
+  // TODO: would be nice to move in with executeAction, but the page makes a closure
+  playAudioInPuppeteer = async (
+    page: Page,
+    audioHash: string,
+    filePath: string
+  ) => {
+    const scriptContent = `
+    window.audioPlaybackPromiseResolved = false;
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
+
+    audio${audioHash}.addEventListener('ended', () => {
+      window.audioPlaybackPromiseResolved = true;
+    });
+  `;
+
+    // Add the script tag to the page
+    await page.addScriptTag({ content: scriptContent });
+
+    // add the start time to the array
+    const startTime = Math.round(performance.now()) - this.trueAudioStartTime;
+    console.log(
+      `audio ${audioHash} (${filePath}) start time set to: ${startTime}`
+    );
+    this.audioStartTimes.push(startTime);
+    // Wait for the audio playback to complete
+    await page.waitForFunction(
+      () => (window as any).audioPlaybackPromiseResolved === true
+    );
+  };
+
+  runPuppeteerAutomation = async (url: string) => {
+    console.log("recording video...");
+    // then run the automation
+    const browser = await puppeteer.launch({
+      headless: "new",
+      // headless: false, // for debugging
+      // devtools: true, // for debugging
+      // headless: "new",
+      // executablePath:
+      //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+    });
+    const page = await browser.newPage();
+    await page.goto(url);
+    await page.setViewport({
+      width: 1920,
+      height: 1080,
+    });
+
+    // Wait for the Monaco Editor to load
+    await page.waitForFunction(() => (window as any).monaco !== undefined);
+
+    // create and start the recording
+    const recorder = new PuppeteerScreenRecorder(page);
+    await recorder.start(this.videoFile);
+
+    // add a 2 second delay before starting the steps
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // before beginning steps, save what current time we are in execution of this program
+    // needed for accurately calculating the audio start times
+    //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
+
+    // Automation commands based on steps
+    for (let i = 0; i < this.actions.length; i++) {
+      // treat index as 'step id'
+      const id = i + 1;
+      const action = this.actions[i];
+      console.log(`Step ${id} action: ${action.name}`);
+
+      const audioHash = sha256Hash(action.value);
+
+      // special case is audio playback
+      if (action.name === "speak-before") {
+        await this.playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${this.actionsAudioDirectory}/${audioHash}.mp3`
+        );
+        continue;
+      } else if (action.name === "speak-during") {
+        // use promise.all to play audio and execute action at the same time
+        await Promise.all([
+          this.playAudioInPuppeteer(
+            page,
+            audioHash,
+            `${this.actionsAudioDirectory}/${audioHash}.mp3`
+          ),
+          executeActionForMonacoLocalhost(page, id, action),
+        ]);
+      } else if (action.name === "type-terminal") {
+      } else {
+        await executeActionForMonacoLocalhost(page, id, action);
+      }
+
+      console.log(`Step ${id} complete`);
+    }
+
+    // wait 15 more seconds for any audio to finish playing
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+
+    // stop the recording
+    await recorder.stop();
+
+    // Close the browser
+    await browser.close();
+
+    console.log("video recorded");
+  };
+
+  // finally the function to orchestrate them all!!!
+  makeVideo = async () => {
+    // first convert scripts to audio
+    const audioFiles = await convertSpeakActionsToAudio(
+      this.actions,
+      this.actionsAudioDirectory,
+      this.forceOverwriteAudioFiles,
+      this.textToSpeechOption
+    );
+
+    await this.runPuppeteerAutomation(this.url);
+
+    // now that we have the offset delays for each audio, build the audio file
+    await buildAudioFile(
+      this.actionsAudioDirectory,
+      audioFiles,
+      this.audioStartTimes
+    );
+
+    // then combine the audio and video files
+    // TODO: quick fix for videoDirectory is the videoFile without the file name
+    const videoDirectory = this.videoFile.replace(/\/[^/]+$/, "");
+    await addAudioToVideo("", videoDirectory, this.videoFile, this.actionsAudioDirectory);
+  };
+
+  getVideoAsBuffer = async () => {
+    const videoBuffer = fs.readFileSync(this.videoFile);
+    return videoBuffer;
+  }
+}
+import { Page } from "puppeteer";
+import type monaco from "monaco-editor";
+import { IAction } from "@fullstackcraftllc/codevideo-types"
+
+export const executeActionForMonacoLocalhost = async (
+  page: Page,
+  id: number,
+  action: IAction
+) => {
+  await page.evaluate(
+    async (id, action) => {
+      // WARNING - you can't refactor this const to some other function because the 'browser' can't load local typescript files of course!
+      // YOU HAVE BEEN WARNED!
+      const KEYBOARD_TYPING_PAUSE_MS = 75;
+
+      let startTime = -1;
+      const editor = (window as any).editor;
+      // @ts-ignore
+      editor.getSupportedActions().forEach((value) => {
+        console.log(value);
+      });
+
+      // define the human typing here in the puppeteer environment
+      const simulateHumanTyping = (
+        editor: monaco.editor.IStandaloneCodeEditor,
+        code: string
+      ) => {
+        return new Promise<void>((resolve) => {
+          const characters: string[] = code.split("");
+          let index: number = 0;
+
+          function typeNextCharacter(): void {
+            if (index < characters.length) {
+              const char: string = characters[index];
+              const selection = editor.getSelection();
+              editor.executeEdits("simulateTyping", [
+                {
+                  range: {
+                    startLineNumber: selection?.selectionStartLineNumber || 1,
+                    startColumn: selection?.selectionStartColumn || 1,
+                    endLineNumber: selection?.endLineNumber || 1,
+                    endColumn: selection?.endColumn || 1,
+                  },
+                  text: char,
+                  forceMoveMarkers: true,
+                },
+              ]);
+              index++;
+              setTimeout(typeNextCharacter, KEYBOARD_TYPING_PAUSE_MS);
+            } else {
+              resolve();
+            }
+          }
+
+          typeNextCharacter();
+        });
+      };
+      
+      const simulateKeyboardPause = async () => {
+        await new Promise((resolve) =>
+          setTimeout(resolve, KEYBOARD_TYPING_PAUSE_MS)
+        );
+      }
+
+      const highlightText = (
+        editor: monaco.editor.IStandaloneCodeEditor,
+        searchText: string
+      ) => {
+        const model = editor.getModel();
+
+        // Find the position of the searchText in the model
+        // @ts-ignore
+        const searchTextPosition = model.findNextMatch(
+          searchText,
+          // @ts-ignore
+          new monaco.Position(1, 1)
+        );
+
+        // If searchText is found
+        if (searchTextPosition) {
+          const line = searchTextPosition.range.startLineNumber;
+          const column = searchTextPosition.range.startColumn;
+
+          // Move the cursor to the beginning of the searchText
+          editor.setPosition({ lineNumber: line, column });
+
+          // Reveal the line in the center
+          editor.revealLineInCenter(line);
+
+          // Calculate the range of the searchText
+          const searchTextLength = searchText.length;
+          // @ts-ignore
+          const range = new monaco.Range(
+            line,
+            column,
+            line,
+            column + searchTextLength
+          );
+
+          // Set the selection to highlight the searchText
+          editor.setSelection(range);
+
+          // Reveal the range in the center
+          editor.revealRangeInCenter(range);
+        }
+      };
+
+      // try to parse the 'times' value as an integer, if it fails, default to 1
+      // the times doesn't always apply to some actions, so we do that action just once
+      let times = parseInt(action.value) || 1;
+      console.log("times", times);
+      let pos;
+      for (let i = 0; i < times; i++) {
+        // actual logic
+        switch (action.name) {
+          // case "speak-before":
+          //   await playAudioInPuppeteer(
+          //     id,
+          //     `./audio/${action.value}.mp3`
+          //   );
+          //   break;
+          case "arrow-down":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.lineNumber = pos.lineNumber + 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "arrow-up":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.lineNumber = pos.lineNumber - 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "tab":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.lineNumber = pos.lineNumber + 2;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "arrow-left":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = pos.column - 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "arrow-right":
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = pos.column + 1;
+            console.log("moving pos to", pos);
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          case "enter":
+            await simulateHumanTyping(editor, "\n");
+            break;
+          case "delete-line":
+            console.log("deleting line");
+            // @ts-ignore
+            let line = editor.getPosition().lineNumber;
+            editor.executeEdits("", [
+              // @ts-ignore
+              { range: new monaco.Range(line, 1, line + 1, 1), text: null },
+            ]);
+            await simulateKeyboardPause();
+            break;
+          case "command-right":
+            // simulate moving to the end of the current line
+            // @ts-ignore
+            pos = editor.getPosition();
+            // @ts-ignore
+            pos.column = 100000;
+            editor.setPosition(pos);
+            await simulateKeyboardPause();
+            break;
+          default:
+            break;
+          case "highlight-code":
+            highlightText(editor, action.value);
+          case "space":
+            await simulateHumanTyping(editor, " ");
+            break;
+          case "backspace":
+            // @ts-ignore
+            editor.trigger(monaco.KeyCode.Backspace, "deleteLeft");
+            await simulateKeyboardPause();
+            break;
+          case "type-editor":
+            await simulateHumanTyping(editor, action.value);
+            break;
+        }
+      }
+      return startTime;
+    },
+    id,
+    action
+  );
+};
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { Page } from "puppeteer";
+import { wait } from "../utils/wait.js";
+
+export const executeActionForVisualStudioCodeLocalhost = async (
+  page: Page,
+  id: number,
+  action: IAction
+) => {
+  const KEYBOARD_TYPING_PAUSE_MS = 75;
+
+  const simulateKeyboardPause = async () => {
+    await wait(KEYBOARD_TYPING_PAUSE_MS);
+  };
+
+  const simulateArrowDown = async () => {
+    await page.keyboard.press("ArrowDown");
+    await simulateKeyboardPause();
+  };
+
+  const simulateArrowUp = async () => {
+    await page.keyboard.press("ArrowUp");
+    await simulateKeyboardPause();
+  };
+
+  const simulateTab = async () => {
+    await page.keyboard.press("Tab");
+    await simulateKeyboardPause();
+  };
+
+  const simulateArrowLeft = async () => {
+    await page.keyboard.press("ArrowLeft");
+    await simulateKeyboardPause();
+  };
+
+  const simulateArrowRight = async () => {
+    await page.keyboard.press("ArrowRight");
+    await simulateKeyboardPause();
+  };
+
+  const simulateEnter = async () => {
+    await page.keyboard.press("Enter");
+    await simulateKeyboardPause();
+  };
+
+  const simulateBackspace = async () => {
+    await page.keyboard.press("Backspace");
+    await simulateKeyboardPause();
+  };
+
+  const simulateSpace = async () => {
+    await page.keyboard.press("Space");
+    await simulateKeyboardPause();
+  };
+
+  const simulateTyping = async (text: string) => {
+    for (let i = 0; i < text.length; i++) {
+      await page.keyboard.type(text[i], { delay: KEYBOARD_TYPING_PAUSE_MS });
+    }
+  };
+
+  const simulateHighlightText = async (searchText: string) => {
+    // You may need to implement text highlighting logic here based on your specific use case
+    console.log("Highlighting text:", searchText);
+  };
+
+  const clickByText = async (page: Page, text: string) => {
+    // Find all elements on the page
+    const allElements = await page.$$("body *");
+
+    // Iterate through each element to find the one with matching text
+    for (const element of allElements) {
+      const elementText = await (
+        await element.getProperty("textContent")
+      ).jsonValue();
+      if (elementText && elementText.trim() === text) {
+        await element.click();
+        console.log("Clicked on the element with text:", text);
+        break; // Stop iterating after clicking the first matching element
+      }
+    }
+  };
+
+  const clickFilename = async (page: Page, filename: string) => {
+    await page.click(`div[aria-label="${filename}"]`);
+    await simulateKeyboardPause();
+  };
+
+  const clickEditor = async (page: Page) => {
+    // click element with class "view-lines monaco-mouse-cursor-text"
+    await page.click(".view-lines");
+    await simulateKeyboardPause();
+  }
+
+  const openTerminal = async (page: Page) => {
+    // press control shift back tick
+    await page.keyboard.down("Control");
+    await page.keyboard.down("Shift");
+    await page.keyboard.press("`");
+    await page.keyboard.up("Control");
+    await page.keyboard.up("Shift");
+    await simulateKeyboardPause();
+  }
+
+  const clickTerminal = async (page: Page) => {
+    // the the element with class "xterm-link-layer"
+    await page.click(".xterm-link-layer");
+    await simulateKeyboardPause();
+  }
+
+  let times = parseInt(action.value) || 1;
+  console.log("times", times);
+  for (let i = 0; i < times; i++) {
+    switch (action.name) {
+      case "arrow-down":
+        await simulateArrowDown();
+        break;
+      case "arrow-up":
+        await simulateArrowUp();
+        break;
+      case "tab":
+        await simulateTab();
+        break;
+      case "arrow-left":
+        await simulateArrowLeft();
+        break;
+      case "arrow-right":
+        await simulateArrowRight();
+        break;
+      case "enter":
+        await simulateEnter();
+        break;
+      case "delete-line":
+        console.log("deleting line");
+        // Implement deleting line logic based on your specific use case
+        break;
+      case "command-right":
+        // Simulate moving to the end of the current line
+        await page.keyboard.down("Control");
+        await page.keyboard.press("ArrowRight");
+        await page.keyboard.up("Control");
+        await simulateKeyboardPause();
+        break;
+      case "highlight-code":
+        await simulateHighlightText(action.value);
+        break;
+      case "space":
+        await simulateSpace();
+        break;
+      case "backspace":
+        await simulateBackspace();
+        break;
+      case "type-editor":
+        await simulateTyping(action.value);
+        break;
+      case "click-filename":
+        await clickFilename(page, action.value);
+        break;
+      case "click-editor":
+        await clickEditor(page);
+        break;
+      case "open-terminal":
+        await openTerminal(page);
+        break;
+        case "click-terminal":
+        await clickTerminal(page);
+        break;
+      case "type-terminal":
+        await simulateTyping(action.value);
+        break;
+      default:
+        break;
+    }
+  }
+};
+import fs from 'fs';
+import  path  from 'path';
+import { exec } from "child_process";
+
+export const addAudioToVideo = async (
+  id: string,
+  videoFolder: string,
+  videoFile: string,
+  audioFile: string
+): Promise<void> => {
+  const videoFileNoExtension = path.basename(videoFile, path.extname(videoFile));
+  const combinedVideoFileName = `${videoFolder}/${id}-combined.mp4`;
+  const convert = new Promise<void>((resolve, reject) => {
+    const ffmpegCommand = `ffmpeg -i ${videoFile} -i ${audioFile}/combined.mp3 -c:v copy -map 0:v:0 -map 1:a:0 -shortest ${combinedVideoFileName} -y`;
+    console.log(`Executing FFmpeg command: ${ffmpegCommand}`)
+    exec(ffmpegCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing ffmpeg command: ${error.message}`);
+        reject(error);
+      } else {
+        console.log(`FFmpeg command executed successfully.`);
+        resolve();
+      }
+    });
+  });
+  await convert;
+
+  // now get rid of final by renaming it and overwriting the original video file
+  fs.renameSync(`${combinedVideoFileName}`, videoFile);
+  console.log(`Video file '${videoFileNoExtension}.mp4' created successfully.`);
+};
+import { exec } from 'child_process';
+
+export const buildAudioFile = (audioFolderPath: string, audioFiles: string[], audioStartTimes: number[]): Promise<void> => {
+  console.log("Combining audio files...")
+
+  // reduce each start time by the first start time
+  // TODO: figure out this audio start delay thing once and for all
+  const trueAudioStartTimes = audioStartTimes.map((time, index) => {
+    if (index === 0) {
+      return time - audioStartTimes[0]
+    } else {
+      return time - audioStartTimes[0] - 200
+    }});
+
+  return new Promise<void>((resolve, reject) => {
+    const inputFiles = audioFiles.map((file, index) => `-i ${file}`).join(' ');
+
+    const filterComplex = trueAudioStartTimes
+      .map((delay, index) => `[${index}]adelay=${delay}:all=true[a${index}];`)
+      .join(' ');
+
+    const amix = audioStartTimes.map((_, index) => `[a${index}]`).join('');
+    
+    const ffmpegCommand = `ffmpeg ${inputFiles} -filter_complex "${filterComplex} ${amix}amix=inputs=${audioStartTimes.length}:normalize=0 [out]" -map "[out]" ${audioFolderPath}/combined.mp3 -async 1 -y`;
+
+    exec(ffmpegCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing ffmpeg command: ${error.message}`);
+        reject(error);
+      } else {
+        console.log(`Audio files combined successfully.`);
+        resolve();
+      }
+    });
+  });
+}import os from "os";
+import fs from "fs";
+import {
+  IAction,
+  isSpeakAction,
+  TextToSpeechOptions,
+} from "@fullstackcraftllc/codevideo-types";
+import { saveToFileSay } from "../say/saveToFileSay.js";
+import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { saveToFileOpenAI } from "../openai/saveToFileOpenAI.js";
+import { saveToFileFestival } from "../festival/saveToFileFestival.js";
+import { saveToFileCoquiAi } from "../coqui-ai-tts/saveToFileCoquiAi.js";
+
+// loop over each step, converting "script" property to audio with say
+export const convertSpeakActionsToAudio = async (
+  actions: Array<IAction>,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  textToSpeechOption: TextToSpeechOptions,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
+  const audioFiles: Array<string> = [];
+
+  // get all speak actions
+  const speakActions = actions.filter(isSpeakAction);
+
+  console.log(
+    `Of the ${actions.length} actions, ${speakActions.length} are speak actions.`
+  );
+
+  for (let i = 0; i < speakActions.length; i++) {
+    if (!isSpeakAction(speakActions[i])) {
+      continue;
+    }
+    // id of the audio file is the sha-256 hash of the text
+    const hash = sha256Hash(speakActions[i].value);
+    const index = i + 1;
+    console.log(
+      `Converting text at step index ${index} to audio... (hash is ${hash})`
+    );
+    const textToSpeak = speakActions[i].value;
+
+    const platform = os.platform();
+    if (platform === "linux" && textToSpeechOption === "sayjs") {
+      console.log("sayjs is not supported on linux");
+      throw new Error("sayjs is not supported on linux");
+    }
+
+    // create audio folder if it doesn't exist
+    if (!fs.existsSync(audioFolderPath)) {
+      fs.mkdirSync(audioFolderPath, { recursive: true });
+    }
+
+    // free version with say (installed outofthebox on mac)
+    switch (textToSpeechOption) {
+      case "coqui-ai":
+        await saveToFileCoquiAi(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite
+        );
+      case "festival":
+        await saveToFileFestival(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite
+        );
+      case "sayjs":
+        await saveToFileSay(hash, textToSpeak, audioFolderPath, forceOverwrite);
+        break;
+      case "elevenlabs":
+        // real version with professional voice from elevenlabs
+        await saveToFileElevenLabs(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite,
+          ttsApiKey,
+          ttsVoiceId
+        );
+        break;
+      case "openai":
+        // tts with open OpenAI
+        await saveToFileOpenAI(
+          hash,
+          textToSpeak,
+          audioFolderPath,
+          forceOverwrite,
+          ttsApiKey,
+          ttsVoiceId
+        );
+        break;
+      default:
+        console.error(`Invalid text to speech option '${textToSpeechOption}'`);
+        break;
+    }
+    audioFiles.push(`${audioFolderPath}/${hash}.mp3`);
+  }
+  return audioFiles;
+};
+import * as fs from "fs/promises";
+import * as path from "path";
+import * as util from "util";
+import { exec } from "child_process";
+
+const execPromise = util.promisify(exec);
+
+export const convertWavToMp3AndDeleteWav = async (wavFile: string, forceOverwrite: boolean) => {
+  try {
+      const folderToWriteTo = path.dirname(wavFile);
+      const outputFilePath = path.join(
+        folderToWriteTo,
+        `${path.parse(wavFile).name}.mp3`
+      );
+
+      const command = `ffmpeg -i "${wavFile}" -codec:a libmp3lame -q:a 2 "${outputFilePath}"`;
+
+      console.log("Executing FFmpeg command:", command);
+
+      // Execute FFmpeg command
+      const { stdout, stderr } = await execPromise(command);
+      
+      // Delete the original wav file
+      await fs.unlink(wavFile);
+
+      console.log(`Conversion for ${wavFile} completed. Original wav file deleted.`);
+      console.log("FFmpeg command output:", stdout);
+      console.error("FFmpeg command error:", stderr);
+    
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
+import { execSync } from "child_process";
+
+export const getAudioDuration = (audioFilePath: string): number => {
+  const result = execSync(
+    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${audioFilePath}`
+  );
+  return parseFloat(result.toString());
+};
+import { IAudioFile } from "@fullstackcraftllc/codevideo-types";
+import fs from "fs";
+import path from "path";
+
+export const readAudioFiles = async (
+  audioFolderPath: string
+): Promise<IAudioFile[]> => {
+  try {
+    const files = await fs.promises.readdir(audioFolderPath);
+    const audioFiles: IAudioFile[] = [];
+
+    for (const file of files) {
+      const filePath = path.join(audioFolderPath, file);
+      if (fs.statSync(filePath).isFile()) {
+        audioFiles.push({ path: filePath });
+      }
+    }
+
+    return audioFiles;
+  } catch (error) {
+    console.error("Error reading audio files:", error);
+    return [];
+  }
+};
+import fs from "fs";
+import * as util from "util";
+import { exec } from "child_process";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav.js";
+
+const execPromise = util.promisify(exec);
+
+export const saveToFileCoquiAi = async (
+  id: string,
+  text: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean
+) => {
+  console.log(`Writing audio file to ${audioFolderPath}`);
+  const filePath = `${audioFolderPath}/${id}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${id} already exists. Skipping...`);
+    return;
+  }
+
+  const wavFile = `${audioFolderPath}/${id}.wav`;
+  // escape double and single quotes
+  text = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
+  // TODO: fix potential security issue with shell injection
+  await execPromise('tts --text "' + text + '" --out_path ' + wavFile);
+  await convertWavToMp3AndDeleteWav(wavFile, forceOverwrite);
+  console.log(`Script for step ${id} converted to audio with say.`);
+};
+import fs from "fs";
+import fetch from "isomorphic-fetch";
+
+interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+}
+
+interface TextToSpeechRequest {
+  text: string;
+  model_id: string;
+  voice_settings: VoiceSettings;
+}
+
+// eleven lab's can't handle reading of "C#" very well
+const customTransforms: Record<string, string> = {
+  "C#": "C sharp",
+};
+
+export const saveToFileElevenLabs = async (
+  filename: string,
+  textToSpeak: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
+  // apply custom transforms to the text
+  for (const key in customTransforms) {
+    if (textToSpeak.includes(key)) {
+      textToSpeak = textToSpeak.replace(
+        new RegExp(key, "g"),
+        customTransforms[key]
+      );
+    }
+  }
+
+  // if the file exists already, don't do anything - save money :)
+  const filePath = `${audioFolderPath}/${filename}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${filename} already exists. Skipping...`);
+    return;
+  }
+
+  // headers for elevenlabs
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "xi-api-key": ttsApiKey || "",
+    Accept: "audio/mpeg",
+  };
+
+  const body: TextToSpeechRequest = {
+    text: textToSpeak,
+    model_id: "eleven_turbo_v2",
+    voice_settings: {
+      stability: 0.5,
+      similarity_boost: 0.95,
+    },
+  };
+
+  try {
+    // elli voice id MF3mGyEYCl7XYWbV9V6O
+    // Chris voice (my own professional voice) id 1RLeGxy9FHYB5ScpFkts
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${
+        ttsVoiceId || ""
+      }`,
+      {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    // return the byte data generated by elevenlabs' boss bots
+    // return await response.arrayBuffer();
+
+    // write the byte data to an mp3 file
+    const buffer = await response.arrayBuffer();
+    const filePath = `${audioFolderPath}/${filename}.mp3`;
+
+    // write the file with fs
+    fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(
+      `Script for step ${filename} converted to audio with Eleven Labs.`
+    );
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const enterAndUpActions: Array<IAction> = [
+  {
+    name: "enter",
+    value:
+      "1",
+  },
+  {
+    name: "enter",
+    value:
+      "1",
+  },
+  {
+    name: "enter",
+    value:
+      "1",
+  },
+  {
+    name: "arrow-up",
+    value:
+      "1",
+  },
+  {
+    name: "arrow-up",
+    value:
+      "1",
+  },
+  {
+    name: "arrow-up",
+    value:
+      "1",
+  }
+];
+
+export default enterAndUpActions;import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const enumExtensionsActions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value:
+      "In this article, we'll explore how to enhance your C# enums with two useful extensions in a generic manner.",
+  },
+  {
+    name: "type-editor",
+    value: "public static class EnumExtensions {\n\n}",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Let's begin by creating the first functionality - obtaining a human-readable representation of enum values.",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "public static string GetDescriptionFromAttribute(this Enum value) {\n\n}",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value: "  var fieldInfo = value.GetType().GetField(value.ToString());",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value: "  if (fieldInfo == null) return value.ToString();",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  return attributes.Any() ? attributes[0].Description : value.ToString();",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Now, let's move on to the second functionality - parsing a string into an enum value.",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "public static T CustomParse<T>(string? stringValue, T defaultValue) where T : Enum {\n\n}",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value: "  if (stringValue == null) return defaultValue;",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value: "  var enumType = typeof(T);",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value: "  foreach (var fieldInfo in enumType.GetFields()) {\n\n}",
+  },
+  {
+    name: "arrow-down",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value:
+      "    var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "    if (attributes.Any() && attributes[0].Description == stringValue)",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value: "      return (T)fieldInfo.GetValue(null)!;",
+  },
+  {
+    name: "arrow-down",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "    if (fieldInfo.Name == stringValue) return (T)fieldInfo.GetValue(null)!;",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value: "  return defaultValue;",
+  },
+  {
+    name: "speak-before",
+    value:
+      "And that's it! We've successfully created two helpful enum extensions. Happy coding!",
+  },
+];
+
+export default enumExtensionsActions;import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const fibonacciActions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value:
+      "In this quick tutorial, we'll walk through the creation of a Fibonacci calculation function in TypeScript.",
+  },
+  {
+    name: "type-editor",
+    value: "// fibonacci.ts\n",
+  },
+  {
+    name: "speak-before",
+    value:
+      "We'll just leave a comment hear to signify that this file is called fibonacci.ts.",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Now, let's define the function signature. We want our function to calculate the nth Fibonacci number, so our function will take a single parameter 'n' of type 'number', which represents the position in the Fibonacci sequence, and also return a number.",
+  },
+  {
+    name: "type-editor",
+    value: "const fibonacci = (n: number): number => {\n\n}",
+  },
+  {
+    name: "speak-before",
+    value:
+      "To help others understand our code, let's add a brief JS Doc comment explaining the purpose of the function and the meaning of the 'n' parameter.",
+  },
+  {
+    name: "arrow-up",
+    value: "2",
+  },
+  {
+    name: "type-editor",
+    value:
+      "/**\n * Calculates the nth Fibonacci number.\n * @param n The position in the Fibonacci sequence.\n */\n",
+  },
+  {
+    name: "speak-before",
+    value: "Now, let's implement the Fibonacci logic inside our function.",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  if (n <= 1) return n;\n  return fibonacci(n - 1) + fibonacci(n - 2);",
+  },
+  {
+    name: "speak-before",
+    value:
+      "This is a recursive implementation of the Fibonacci sequence. If 'n' is '0' or '1', we return 'n'. Otherwise, we recursively call the Fibonacci function for n minus 1 and n minus 2, then add them together.",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Now, this function would work, but it's not very performant. We can use memoization to optimize the performance of our Fibonacci function.",
+  },
+  {
+    name: "delete-line",
+    value: "1",
+  },
+  {
+    name: "arrow-up",
+    value: "1",
+  },
+  {
+    name: "delete-line",
+    value: "1",
+  },
+  {
+    name: "enter",
+    value: "1",
+  },
+  {
+    name: "arrow-up",
+    value: "1",
+  },
+  {
+    name: "type-editor",
+    value:
+      "  const memo: Record<number, number> = {};\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return memo[n] = fibonacci(n - 1) + fibonacci(n - 2);",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Here, we've introduced a 'memo' object to store previously calculated Fibonacci values. This reduces redundant calculations and improves the efficiency of our function. Great! We've successfully created a Fibonacci calculation function in TypeScript using a recursive approach with memoization. Until next time - cheers!",
+  },
+];
+
+export default fibonacciActions;import { IAction } from "@fullstackcraftllc/codevideo-types";
+
+const sumActions: Array<IAction> = [
+  {
+    name: "speak-before",
+    value:
+      "In this lesson, we're going to create a simple sum function in typescript.",
+  },
+  {
+    name: "speak-before",
+    value: "Let's start with the signature of the function.",
+  },
+  {
+    name: "type-editor",
+    value: "const sum = (a: number, b: number) => {\n\n}",
+  },
+  {
+    name: "speak-before",
+    value: "We probably should add a short js doc comment to the function.",
+  },
+  {
+    name: "arrow-up",
+    value: "3",
+  },
+  {
+    name: "type-editor",
+    value:
+      "/**\n * Adds two numbers together.\n * @param a The first number to add.\n * @param b The second number to add.\n */\n",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "speak-before",
+    value:
+      "Finally, we'll add the body of the function. For such a simple function, not much more discussion is needed, we just use the built in 'plus' operator to return the sum of a and b.",
+  },
+  {
+    name: "type-editor",
+    value: "  return a + b;",
+  },
+  {
+    name: "arrow-down",
+    value: "1",
+  },
+  {
+    name: "speak-before",
+    value:
+      "However, there is a small refactoring we can make. Since we're using an arrow function and have a single line which is our return statement, we can remove the curly braces and 'return' keyword.",
+  },
+  {
+    name: "highlight-code",
+    value: "{\n  return a + b;\n};",
+  },
+  {
+    name: "speak-before",
+    value: "Let's do the actual refactoring now.",
+  },
+  {
+    name: "backspace",
+    value: "19",
+  },
+  {
+    name: "type-editor",
+    value: " a + b;",
+  },
+  {
+    name: "speak-before",
+    value:
+      "This is called an implicit return. It's a nice way to make code shorter and more readable for simple functions like this one.",
+  },
+  {
+    name: "speak-before",
+    value: "And that's it! We've created a simple sum function in TypeScript. Congrats!",
+  },
+];
+
+export default sumActions;import fs from "fs";
+import * as util from "util";
+import { exec } from "child_process";
+const execPromise = util.promisify(exec);
+
+export const saveToFileFestival = async (
+  id: string,
+  text: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean
+) => {
+  console.log(`Writing audio file to ${audioFolderPath}`);
+  const filePath = `${audioFolderPath}/${id}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${id} already exists. Skipping...`);
+    return;
+  }
+  console.log(`Writing audio file to ${filePath}`);
+
+  // escape double and single quotes
+  text = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
+  // TODO: fix potential security issue with shell injection
+  await execPromise("echo " + text + " | text2wave | lame - " + filePath);
+  console.log(`Script for step ${id} converted to audio with festival.`);
+};
+export { VideoGenerator } from "./VideoGenerator/VideoGenerator.js";
+export { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+export { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";import { IAction, ProgrammingLanguages, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+
+export interface IGenerateVideoFromActionsOptions {
+    actions: Array<IAction>,
+    language: ProgrammingLanguages,
+    textToSpeechOption: TextToSpeechOptions,
+    initialCode?: string,
+    ttsApiKey?: string;
+    ttsVoiceId?: string;
+    guid?: string,
+  }import path from "path";
+import fs from "fs";
+import { IAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+
+export const loadActions = async (): Promise<{
+  url: string;
+  actions: Array<IAction>;
+  videoFile: string;
+  currentWorkingDirectory: string;
+  actionsAudioDirectory: string;
+  actionsVideoDirectory: string;
+  textToSpeechOption: TextToSpeechOptions
+}> => {
+  // first argument to this script is the path to the actions file
+  if (process.argv.length < 3) {
+    console.error("Please provide a path to the actions file");
+    process.exit(1);
+  }
+
+  // if we have a 4th argument, then we know we have a text to speech option
+  let textToSpeechOption: TextToSpeechOptions = "sayjs";
+  if (process.argv.length === 4) {
+    textToSpeechOption = process.argv[3] as TextToSpeechOptions;
+  }
+
+  const inputStepsFilePath = process.argv[2];
+  const actions: Array<IAction> = [];
+  const currentWorkingDirectory = process.cwd();
+
+  // join the actions file path with the current working directory
+  const actionsFilePath = path.join(
+    currentWorkingDirectory,
+    inputStepsFilePath
+  );
+
+  // ensure the file exist relative to the current working directory
+  if (!fs.existsSync(actionsFilePath)) {
+    console.error(`File not found: ${actionsFilePath}`);
+    process.exit(1);
+  }
+
+  // try typescript first
+  if (inputStepsFilePath.endsWith(".ts")) {
+    // dynamically require the typescript file
+    const {default: typeScriptActions} = await import(actionsFilePath);
+
+    // if it's null, throw error that they need to use 'export default' syntax
+    if (typeScriptActions === null) {
+      console.error(
+        "Failed to load TypeScript actions. Use 'export default' syntax in your typescript file to export the actions."
+      );
+      process.exit(1);
+    }
+
+    actions.push(...typeScriptActions);
+  } else if (inputStepsFilePath.endsWith(".json")) {
+    // we can safely require the actions file
+    const {default: jsonActions} = await import(actionsFilePath, { assert: { type: "json" } });
+    actions.push(...jsonActions);
+  } else {
+    console.error(
+      "Please provide a path to a .ts or .json file with your actions"
+    );
+    process.exit(1);
+  }
+
+  console.log(`Found ${actions.length} actions in file ${actionsFilePath}`);
+  const fileNameWithoutExtension = path.basename(
+    actionsFilePath,
+    path.extname(actionsFilePath)
+  );
+  const actionsAudioDirectory = `${currentWorkingDirectory}/audio/${fileNameWithoutExtension}`;
+  const actionsVideoDirectory = `${currentWorkingDirectory}/video/${fileNameWithoutExtension}`;
+  const url = `file://${currentWorkingDirectory}/editor.html`;
+  const videoFile = `./video/${fileNameWithoutExtension}.mp4`;
+
+  // if we see at least one 'type-terminal' action, then we know this has to run on a codespaces
+  // if (actions.map((a) => a.name).includes("type-terminal")) {
+  //   url = `https://prod.liveshare.vsengsaas.visualstudio.com/join?049AB4AD9BC16BE338A13263281272C72C49`;
+  // }
+
+  return {
+    url,
+    actions,
+    currentWorkingDirectory,
+    videoFile,
+    actionsAudioDirectory,
+    actionsVideoDirectory,
+    textToSpeechOption
+  };
+};
+import puppeteer, { Page } from "puppeteer";
+import fs from "fs";
+import { executeActionForMonacoLocalhost } from "./actions/executeActionForMonacoLocalhost.js";
+import { addAudioToVideo } from "./audio/addAudioToVideo.js";
+import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
+import { buildAudioFile } from "./audio/buildAudioFile.js";
+import { loadActions } from "./io/loadActions.js";
+import { sha256Hash } from "./utils/sha256Hash.js";
+import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+
+let trueAudioStartTime = 0;
+
+// loading from json file, do it like this:
+const {
+  actions,
+  url,
+  videoFile,
+  actionsAudioDirectory,
+  textToSpeechOption,
+} = await loadActions();
+
+// for a typescript file, the actions are loaded from the typescript.json file
+// const { actions, url, fileNameWithoutExtension, actionsAudioDirectory } = loadActions('typescript');
+
+// create a file in audio/{fileNameWithoutExtension} if it doesn't already exist
+if (!fs.existsSync(actionsAudioDirectory)) {
+  fs.mkdirSync(actionsAudioDirectory);
+}
+
+// keep track of start times for the audio readAudioFiles
+const audioStartTimes: Array<number> = [];
+
+//  audio playback logic
+// TODO: would be nice to move in with executeAction, but the page makes a closure
+const playAudioInPuppeteer = async (
+  page: Page,
+  audioHash: string,
+  filePath: string
+) => {
+  const scriptContent = `
+    window.audioPlaybackPromiseResolved = false;
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
+
+    audio${audioHash}.addEventListener('ended', () => {
+      window.audioPlaybackPromiseResolved = true;
+    });
+  `;
+
+  // Add the script tag to the page
+  await page.addScriptTag({ content: scriptContent });
+
+  // add the start time to the array
+  const startTime = Math.round(performance.now()) - trueAudioStartTime;
+  console.log(
+    `audio ${audioHash} (${filePath}) start time set to: ${startTime}`
+  );
+  audioStartTimes.push(startTime);
+  // Wait for the audio playback to complete
+  await page.waitForFunction(
+    () => (window as any).audioPlaybackPromiseResolved === true
+  );
+};
+
+const runPuppeteerAutomation = async (url: string) => {
+  console.log("recording video...");
+  // then run the automation
+  const browser = await puppeteer.launch({
+    headless: "new", 
+    // devtools: true, // for debugging
+    // executablePath:
+    //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    defaultViewport: {
+      width: 1920,
+      height: 1080,
+    },
+  });
+  const page = await browser.newPage();
+  await page.goto(url);
+  await page.setViewport({
+    width: 1920,
+    height: 1080,
+  });
+
+  // Wait for the Monaco Editor to load
+  await page.waitForFunction(() => (window as any).monaco !== undefined);
+
+  // create and start the recording
+  const recorder = new PuppeteerScreenRecorder(page);
+  await recorder.start(videoFile);
+
+  // add a 2 second delay before starting the steps
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  // before beginning steps, save what current time we are in execution of this program
+  // needed for accurately calculating the audio start times
+  //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
+
+  // Automation commands based on steps
+  for (let i = 0; i < actions.length; i++) {
+    // treat index as 'step id'
+    const id = i + 1;
+    const action = actions[i];
+    console.log(`Step ${id} action: ${action.name}`);
+
+    const audioHash = sha256Hash(action.value);
+
+    // special case is audio playback
+    if (action.name === "speak-before") {
+      await playAudioInPuppeteer(
+        page,
+        audioHash,
+        `${actionsAudioDirectory}/${audioHash}.mp3`
+      );
+      continue;
+    } else if (action.name === "speak-during") {
+      // use promise.all to play audio and execute action at the same time
+      await Promise.all([
+        playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${actionsAudioDirectory}/${audioHash}.mp3`
+        ),
+        executeActionForMonacoLocalhost(page, id, action),
+      ]);
+    } else if (action.name === "type-terminal") {
+    } else {
+      await executeActionForMonacoLocalhost(page, id, action);
+    }
+
+    console.log(`Step ${id} complete`);
+  }
+
+  // wait 15 more seconds for any audio to finish playing
+  await new Promise((resolve) => setTimeout(resolve, 15000));
+
+  // stop the recording
+  await recorder.stop();
+
+  // Close the browser
+  await browser.close();
+
+  console.log("video recorded");
+};
+
+const main = async () => {
+  try {
+    // first convert scripts to audio
+    const audioFiles = await convertSpeakActionsToAudio(
+      actions,
+      actionsAudioDirectory,
+      false,
+      textToSpeechOption
+    );
+
+    // then run the puppeteer automation
+    await runPuppeteerAutomation(url);
+
+    // now that we have the offset delays for each audio, build the audio file
+    await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+
+    // then combine the audio and video files
+
+    // TODO: quick fix for videoDirectory is the videoFile without the file name
+    const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+
+    await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
+  } catch (error) {
+    console.error("MAIN ERROR:", error);
+  }
+};
+
+// Call the main function to start the automation
+main();import { addAudioToVideo } from "./audio/addAudioToVideo.js";
+import { buildAudioFile } from "./audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
+import { loadActions } from "./io/loadActions.js";
+import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
+
+const makeVideo = async () => {
+  const { actions, url, videoFile, actionsAudioDirectory, textToSpeechOption } =
+    await loadActions();
+
+  // first convert scripts to audio
+  const audioFiles = await convertSpeakActionsToAudio(
+    actions,
+    actionsAudioDirectory,
+    false,
+    textToSpeechOption
+  );
+
+  // then run the puppeteer automation, which records the video and returns the start times of each audio
+  const audioStartTimes = await runPuppeteerAutomation(
+    url,
+    videoFile,
+    actions,
+    actionsAudioDirectory,
+    'monaco-single-editor'
+  );
+
+  // now that we have the offset delays for each audio, build the audio file
+  await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+
+  // then combine the audio and video files
+  // TODO: quick fix for videoDirectory is the videoFile without the file name
+  const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+  await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
+};
+
+makeVideo();
+import fs from "fs";
+import fetch from "isomorphic-fetch";
+
+interface OpenAITTSRequest {
+  model: string;
+  voice: string;
+  input: string;
+  response_format: string;
+  speed: number;
+}
+
+export const saveToFileOpenAI = async (
+  filename: string,
+  textToSpeak: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean,
+  ttsApiKey?: string,
+  ttsVoiceId?: string
+) => {
+  const filePath = `${audioFolderPath}/${filename}.mp3`;
+  if (fs.existsSync(filePath) && !forceOverwrite) {
+    console.log(`File with hash ${filename} already exists. Skipping...`);
+    return;
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${ttsApiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const data: OpenAITTSRequest = {
+    model: "tts-1",
+    voice: ttsVoiceId || "echo",
+    input: textToSpeak,
+    response_format: "mp3",
+    speed: 1.0,
+  };
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    // write the byte data to an mp3 file
+    const buffer = await response.arrayBuffer();
+    const filePath = `${audioFolderPath}/${filename}.mp3`;
+
+    // write the file with fs
+    fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(`Script for step ${filename} converted to audio with Open AI.`);
+  } catch (error) {
+    console.error(error);
+  }
+};
+import OpenAI from "openai";
+import fs from "fs";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export const speechToText = async (audioFile: string) => {
+  try {
+    const transcript = await client.audio.transcriptions.create({
+      file: fs.createReadStream(audioFile),
+      model: "whisper-1"
+    });
+    return transcript.text;
+  } catch (error) {
+    console.error(`Error with file ${audioFile}: ${error}`);
+    return "";
+  }
+};
+import { Page } from "puppeteer";
+
+export const playAudioInPuppeteer = async (
+    page: Page,
+    audioHash: string,
+    filePath: string
+  ): Promise<number> => {
+    const scriptContent = `
+    window.audioPlaybackPromiseResolved = false;
+    const audio${audioHash} = new Audio('${filePath}');
+    const playPromise${audioHash} = audio${audioHash}.play();
+
+    audio${audioHash}.addEventListener('ended', () => {
+      window.audioPlaybackPromiseResolved = true;
+    });
+  `;
+
+    // Add the script tag to the page
+    await page.addScriptTag({ content: scriptContent });
+
+    // add the start time to the array
+    const audioStartTime = Math.round(performance.now());
+    console.log(
+      `audio ${audioHash} (${filePath}) start time set to: ${audioStartTime}`
+    );
+    
+    // Wait for the audio playback to complete
+    await page.waitForFunction(
+      () => (window as any).audioPlaybackPromiseResolved === true
+    );
+
+    return audioStartTime;
+  };import { IAction, ActionEnvironment } from "@fullstackcraftllc/codevideo-types";
+import puppeteer from "puppeteer";
+import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
+import { executeActionForMonacoLocalhost } from "../actions/executeActionForMonacoLocalhost.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+import { playAudioInPuppeteer } from "./playAudioInPuppeteer.js";
+import { executeActionForVisualStudioCodeLocalhost } from "../actions/executeActionForVisualStudioCodeLocalhost.js";
+
+
+const resolveActionRunnerFunction = (actionEnvironment: ActionEnvironment) => {
+  switch (actionEnvironment) {
+    case 'monaco-single-editor':
+      return executeActionForMonacoLocalhost;
+    case 'visual-studio-code-web':
+      return executeActionForVisualStudioCodeLocalhost;
+    // case 'visual-studio-code-native':
+    //   // TODO:
+    //   return executeActionForVisualStudioCodeNative;
+    default:
+      throw new Error(`Action environment not supported: ${actionEnvironment}`);
+  }
+}
+
+export const runPuppeteerAutomation = async (url: string, videoFile: string, actions: Array<IAction>, actionsAudioDirectory: string, actionEnvironment: ActionEnvironment): Promise<Array<number>> => {
+  const actionRunnerFunction = resolveActionRunnerFunction(actionEnvironment);  
+  const audioStartTimes: Array<number> = [];
+    console.log("recording video...");
+    // then run the automation
+    const browser = await puppeteer.launch({
+      args: ["--disable-dev-shm-usage", "--no-sandbox"], // both flags needed for docker, see: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
+      // headless: "new",
+      headless: false, // for debugging
+      // devtools: true, // for debugging
+      // headless: "new",
+      // executablePath:
+      //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+    });
+    const page = await browser.newPage();
+    await page.goto(url);
+    await page.setViewport({
+      width: 1920,
+      height: 1080,
+    });
+
+    // create and start the recording
+    const recorder = new PuppeteerScreenRecorder(page);
+    await recorder.start(videoFile);
+
+    // add a 2 second delay before starting the steps
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // before beginning steps, save what current time we are in execution of this program
+    // needed for accurately calculating the audio start times
+    //trueAudioStartTime = 5000 //Math.round(performance.now()) + 1999;
+
+    // Automation commands based on steps
+    for (let i = 0; i < actions.length; i++) {
+      // treat index as 'step id'
+      const id = i + 1;
+      const action = actions[i];
+      console.log(`Step ${id} action: ${action.name}`);
+
+      const audioHash = sha256Hash(action.value);
+
+      // special case is audio playback
+      if (action.name === "speak-before") {
+        const audioStartTime = await playAudioInPuppeteer(
+          page,
+          audioHash,
+          `${actionsAudioDirectory}/${audioHash}.mp3`
+        );
+        audioStartTimes.push(audioStartTime);
+        continue;
+      } else if (action.name === "speak-during") {
+        // use promise.all to play audio and execute action at the same time
+        const [audioStartTime, _] = await Promise.all([
+          playAudioInPuppeteer(
+            page,
+            audioHash,
+            `${actionsAudioDirectory}/${audioHash}.mp3`
+          ),
+          actionRunnerFunction(page, id, action),
+        ]);
+        audioStartTimes.push(audioStartTime);
+      } else if (action.name === "type-terminal") {
+      } else {
+        await actionRunnerFunction(page, id, action);
+      }
+
+      console.log(`Step ${id} complete`);
+    }
+
+    // wait 15 more seconds for any audio to finish playing
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+
+    // stop the recording
+    await recorder.stop();
+
+    // Close the browser
+    await browser.close();
+
+    console.log("video recorded");
+
+    // return the audio start times
+    return audioStartTimes;
+  };import say from "say";
+import fs from "fs";
+import os from "os";
+import { convertWavToMp3AndDeleteWav } from "../audio/convertWavToMp3AndDeleteWav.js";
+
+export const saveToFileSay = async (
+  id: string,
+  text: string,
+  audioFolderPath: string,
+  forceOverwrite: boolean
+) => {
+  console.log(`Writing audio file to ${audioFolderPath}`)
+  return new Promise<void>((resolve, reject) => {
+    const filePath = `${audioFolderPath}/${id}.mp3`;
+    if (fs.existsSync(filePath) && !forceOverwrite) {
+      console.log(`File with hash ${id} already exists. Skipping...`);
+      resolve(); // Resolve immediately if file exists and no force overwrite
+    } else {
+      const wavFile = `${audioFolderPath}/${id}.wav`;
+      const name = os.platform() === "win32" ? 'Microsoft David Desktop' : 'Daniel';
+      say.export(text, name, 1, wavFile, async (err) => {
+        if (err) {
+          console.error(err);
+          reject(err); // Reject promise if there's an error during export
+        } else {
+          try {
+            await convertWavToMp3AndDeleteWav(wavFile, forceOverwrite);
+            console.log(`Script for step ${id} converted to audio with say.`);
+            resolve(); // Resolve promise after conversion and deletion
+          } catch (error) {
+            reject(error); // Reject promise if there's an error during conversion/deletion
+          }
+        }
+      });
+    }
+  });
+};
+import { loadActions } from "../io/loadActions.js";
+import { identifyAndValidate } from "@fullstackcraftllc/syntax-spy";
+import { convertActionsToCodeActions } from "@fullstackcraftllc/codevideo-types";
+import { VirtualCodeBlock } from "@fullstackcraftllc/virtual-code-block";
+
+const codeHealthCheck = async () => {
+  // load in the steps.json file
+  const { actions } = await loadActions();
+
+  // get code actions
+  const codeActions = convertActionsToCodeActions(actions);
+
+  // create a virtual code block and apply the code actions to it
+  const virtualCodeBlock = new VirtualCodeBlock([]);
+  virtualCodeBlock.applyActions(codeActions);
+  const finalCode = virtualCodeBlock.getCode();
+
+  // use syntax-spy to identify and validate the code
+  const { language, isValid, error } = await identifyAndValidate(finalCode);
+  if (error) {
+    console.error("Error:", error);
+  } else {
+    console.log("Detected language:", language);
+    console.log("Syntax is valid:", isValid);
+  }
+};
+
+
+codeHealthCheck();
+import { convertActionsToSpeakActions } from "@fullstackcraftllc/codevideo-types";
+import { loadActions } from "../io/loadActions.js";
+
+const scriptChartCount = async () => {
+  // load in the steps.json file
+  const { actions } = await loadActions();
+
+  const speakActions = convertActionsToSpeakActions(actions);
+
+  // use reduce to count the characters in the'value' property of each speak action
+  const characterCount = speakActions.map(a => a.value).reduce((a, b) => a + b.length, 0);
+  const wordCount = Math.round(characterCount / 5);
+  const pageCount = (wordCount / 500).toFixed(1);
+
+  // log the results
+  console.log(`Total character count in scripts: ${characterCount}`);
+  console.log(`Total word count in scripts: ${wordCount}`);
+  console.log(`Total page count in scripts: ${pageCount}`);
+};
+
+scriptChartCount();
+import { IAction, isSpeakAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+import { preprocessStringForComparison } from "../utils/preprocessStringForComparison.js";
+import { loadActions } from "../io/loadActions.js";
+import { speechToText } from "../openai/speechToText.js";
+import { levenshteinDistance } from "../utils/levenshteinDistance.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { sha256Hash } from "../utils/sha256Hash.js";
+
+const distanceThreshold = 0;
+
+const scriptsHealthCheck = async () => {
+  // load in the actions file
+  const { actions, actionsAudioDirectory, textToSpeechOption } = await loadActions();
+
+  // for each script, generate the transcript with OpenAI whisper, 
+  // then compare the original text with the resulting transcript using levenshtein distance
+  for (let i = 0; i < actions.length; i++) {
+    const textHash = sha256Hash(actions[i].value);
+    const action = actions[i];
+
+    if (isSpeakAction(action)) {
+      await checkForArtifacts(textHash, action, actionsAudioDirectory, textToSpeechOption);
+    }
+  }
+};
+
+const checkForArtifacts = async (
+  textHash: string,
+  action: IAction,
+  stepsAudioPath: string,
+  textToSpeechOption: TextToSpeechOptions
+) => {
+  // generate transcript
+  const textToSpeak = action.value;
+  const transcript = await speechToText(`${stepsAudioPath}/${textHash}.mp3`);
+  if (!transcript) {
+    console.log(
+      `Script with hash ${textHash}: Error creating transcript from audio file (${stepsAudioPath}/${textHash}.mp3)`
+    );
+    return;
+  }
+  // first preprocess the texts (all to lowercase and removing any non a-z0-9 characters) compare with levenshtein distance
+  const distance = levenshteinDistance(
+    preprocessStringForComparison(textToSpeak),
+    preprocessStringForComparison(transcript)
+  );
+  // if the levenshtein distance is greater than distanceThreshold, log the results
+  if (distance > distanceThreshold) {
+    console.log("WARNING - POTENTIAL ARTIFACTS DETECTED!");
+    console.log(
+      `Text hash: ${textHash}:\nOriginal: ${textToSpeak}\nTranscript: ${transcript}\nLevenshtein distance: ${distance}`
+    );
+    // and regenerate the audio for this step
+    console.log(`Regenerating audio for step ${textHash}...`);
+    if (isSpeakAction(action)) {
+      await convertSpeakActionsToAudio([action], stepsAudioPath, true, textToSpeechOption);
+    }
+  } else {
+    console.log(
+      `Text hash: ${textHash}: No artifacts detected. (Levenshtein distance: ${distance})`
+    );
+  }
+};
+
+scriptsHealthCheck();
+import fs from "fs";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
+
+const main = async () => {
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    actions: [
+    {
+      name: "speak-before",
+      value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "speak-before",
+      value: "Yeah, I'm pretty much awesome.",
+    },
+  ],
+  language: "javascript",
+  textToSpeechOption: "coqui-ai",
+  };
+
+  // use promise.all to run multiple instances of the function concurrently
+  const promises = Array.from({ length: 10 }, () => generateVideoFromActions(videoOptions));
+  await Promise.all(promises);
+};
+
+main();
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
+
+const main = async () => {
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    initialCode: "// here's a comment at the top of the file\n\n// and another two lines later\n\n// and another\n",
+    actions: [
+      {
+        name: "speak-before",
+        value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "// Hello, world!\n",
+      },
+      {
+        name: "speak-before",
+        value: "Yeah, I'm pretty much awesome.",
+      },
+    ],
+    language: "javascript",
+    textToSpeechOption: "elevenlabs",
+    ttsApiKey: process.env.ELEVEN_LABS_API_KEY,
+    ttsVoiceId: process.env.ELEVEN_LABS_VOICE_ID,
+  };
+
+  // use promise.all to run multiple instances of the function concurrently
+  await generateVideoFromActions(videoOptions);
+};
+
+main();
+import fs from "fs";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
+
+const main = async () => {
+  const videoOptions: IGenerateVideoFromActionsOptions = {
+    actions: [
+      {
+        name: "speak-before",
+        value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "# Hello, world!\n",
+      },
+      {
+        name: "type-editor",
+        value: "def my_awesome_python_function():\n\t# some code here...",
+      },
+      {
+        name: "speak-before",
+        value: "Yeah, I'm pretty much awesome.",
+      },
+    ],
+    language: "python",
+    textToSpeechOption: "openai",
+    ttsApiKey: process.env.OPENAI_API_KEY,
+    ttsVoiceId: "shimmer",
+  };
+
+  await generateVideoFromActions(videoOptions);
+};
+
+main();
+import fs from "fs";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
+
+const main = async () => {
+  const actions: Array<IAction> = [
+    {
+      name: "speak-before",
+      value: "I'm going to type a comment of 'Hello, world!' in the editor.",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "type-editor",
+      value: "// Hello, world!\n",
+    },
+    {
+      name: "speak-before",
+      value: "Yeah, I'm pretty much awesome.",
+    },
+  ];
+
+  const {videoBuffer} = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
+  fs.writeFileSync("visual-studio-driver.mp4", videoBuffer);
+};
+
+main();
+import * as fs from 'fs';
+import * as path from 'path';
+
+export const findFileWithCharacters = (directory: string, characters: string) => {
+    const files = fs.readdirSync(directory);
+
+    for (const file of files) {
+        if (file.includes(characters)) {
+            return path.join(directory, file);
+        }
+    }
+
+    return null;
+}import { Bbox, Block, createWorker, PSM } from "tesseract.js";
+import Jimp from "jimp";
+import { IPoint } from "@fullstackcraftllc/codevideo-types";
+import fs from "fs";
+
+export const findTextCoordinatesFromImage = async (
+  imagePath: string,
+  searchText: string
+): Promise<IPoint | undefined> => {
+  const worker = await createWorker();
+  await worker.setParameters({
+    tessedit_char_whitelist:
+      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+{}|:\"<>?~`-=[]\\;',./",
+    tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+  });
+
+  const image = await Jimp.read(imagePath);
+  const imageBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+  const { data } = await worker.recognize(imageBuffer);
+
+  // helpful for debugging: log each text block
+  // data.blocks?.forEach((block: Block) => {
+  //   console.log(block.text);
+  // });
+
+  const bounds = data.blocks
+    ?.filter(({ text }) => text.trim().includes(searchText))
+    .map((block: Block) => {
+      // console.log("found block: ", block)
+      const boundingBox: Bbox = block.bbox;
+      // full bounding box
+      // return {
+      //   x0: boundingBox.x0,
+      //   y0: boundingBox.y0,
+      //   x1: boundingBox.x1,
+      //   y1: boundingBox.y1,
+      // };
+      // for IPoint, return average of x and y
+      return {
+        x: (boundingBox.x0 + boundingBox.x1) / 2,
+        y: (boundingBox.y0 + boundingBox.y1) / 2,
+      };
+    })
+    .at(0);
+
+  await worker.terminate();
+
+  // delete the image from the file system as cleanup
+  console.log("deleting image")
+  fs.unlinkSync(imagePath);
+
+  return bounds;
+};
+import fs from "fs";
+import os from "os";
+import { addAudioToVideo } from "../audio/addAudioToVideo.js";
+import { buildAudioFile } from "../audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
+import { IGenerateVideoFromActionsOptions } from "../interfaces/IGenerateVideoFromActionsOptions.js";
+import { v4 as uuidv4 } from 'uuid';
+
+// using series of functions
+export const generateVideoFromActions = async (options: IGenerateVideoFromActionsOptions): Promise<{videoBuffer: Buffer, pathToFile: string, guid: string}> => {
+  const { actions, language, textToSpeechOption, initialCode, ttsApiKey, ttsVoiceId, guid } = options;
+  // use the guid for the file name if it was passed, otherwise generate one
+  // we need to do this to prevent deadlocks when running multiple instances of the function concurrently
+  // every request has its own little playground folder to work in
+  const fileNameWithoutExtension = guid ? guid : uuidv4();
+  const currentWorkingDirectory = process.cwd();
+  
+  let resolvedTextToSpeechOption = textToSpeechOption;
+  if (os.platform() === "linux" && textToSpeechOption === "sayjs") {
+    console.log("sayjs is only supported on windows and mac, using festival instead");
+    resolvedTextToSpeechOption = "festival";
+  }
+
+  // if we don't do this, initialcode resolves literally to the string "undefined"
+  let resolvedInitialCode = initialCode;
+  // now url encode the initial code
+  resolvedInitialCode = encodeURIComponent(resolvedInitialCode || "");
+
+  // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
+  const directoryOfEditorHtmlFile = process.env.EDITOR_SOURCE === "development" ? 
+  `${currentWorkingDirectory}/src/monaco-localhost-single-file-editor` : 
+  `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;
+  const editorUrl = `file://${directoryOfEditorHtmlFile}/editor.html?language=${language}&initialCode=${resolvedInitialCode}`;
+
+  // create all folders as needed if they don't exist
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp`, { recursive: true });
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp/video`, { recursive: true });
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`, { recursive: true });
+
+  const audioDirectory = `${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`;
+  const videoDirectory = `${currentWorkingDirectory}/tmp/video`;
+  const videoFile = `${currentWorkingDirectory}/tmp/video/${fileNameWithoutExtension}.mp4`;
+
+  // first convert scripts to audio
+  const audioFiles = await convertSpeakActionsToAudio(
+    actions,
+    audioDirectory,
+    false,
+    resolvedTextToSpeechOption,
+    ttsApiKey,
+    ttsVoiceId
+  );
+
+  // then run the puppeteer automation, which records the video and returns the start times of each audio
+  const audioStartTimes = await runPuppeteerAutomation(
+    editorUrl,
+    videoFile,
+    actions,
+    audioDirectory,
+    "monaco-single-editor"
+  );
+
+  // now that we have the offset delays for each audio, build the audio file
+  await buildAudioFile(audioDirectory, audioFiles, audioStartTimes);
+
+  // then combine the audio and video files
+  await addAudioToVideo(fileNameWithoutExtension, videoDirectory, videoFile, audioDirectory);
+
+  const videoBuffer  = await fs.promises.readFile(videoFile);
+
+  // return relevant information
+  return {
+    videoBuffer,
+    pathToFile: videoFile,
+    guid: fileNameWithoutExtension
+  }
+};
+
+import puppeteer, { ElementHandle, Page } from 'puppeteer';
+
+const type = async (page: Page, text: string) => {
+  await page.keyboard.type(text, { delay: 75 });
+};
+
+const issuePageCommand = async (page: Page, command: string, value: string) => {
+  switch (command) {
+    case 'new-file':
+      await page.keyboard.down('Control');
+      await page.keyboard.down('Alt');
+      await page.keyboard.down('Meta');
+      await page.keyboard.press('N');
+      await page.keyboard.up('Control');
+      await page.keyboard.up('Alt');
+      await page.keyboard.up('Meta');
+      break;
+
+    case 'type-editor':
+      const editorDiv = await page.waitForSelector('.view-lines.monaco-mouse-cursor-text');
+      await editorDiv?.click();
+      await type(page, value);
+      break;
+
+    case 'click-editor':
+      const editorDivClick = await page.waitForSelector('.view-lines.monaco-mouse-cursor-text');
+      await editorDivClick?.click();
+      break;
+
+    case 'execute-terminal-command':
+      const terminalCanvas = await page.waitForSelector('.xterm-link-layer');
+      await terminalCanvas?.click();
+      await type(page, value);
+      await page.keyboard.press('Enter');
+      break;
+
+    case 'click-terminal':
+      const terminalClick = await page.waitForSelector('.xterm-link-layer');
+      await terminalClick?.click();
+      break;
+
+    case 'open-file':
+      const openFileSpan = await page.waitForXPath(`//span[@class="monaco-highlighted-label" and text()="${value}"]`) as ElementHandle<Element>;
+      await openFileSpan?.click();
+      break;
+
+    case 'up-arrow':
+      await page.keyboard.press('ArrowUp');
+      break;
+
+    case 'down-arrow':
+      await page.keyboard.press('ArrowDown');
+      break;
+
+    case 'enter':
+      await page.keyboard.press('Enter');
+      break;
+
+    default:
+      throw new Error(`Unsupported command: ${command}`);
+  }
+};
+
+export { issuePageCommand };
+export const levenshteinDistance = (a: string, b: string): number => {
+  const matrix: number[][] = [];
+
+  // Initialize matrix
+  for (let i = 0; i <= a.length; i++) {
+    matrix[i] = [];
+    for (let j = 0; j <= b.length; j++) {
+      if (i === 0) {
+        matrix[i][j] = j;
+      } else if (j === 0) {
+        matrix[i][j] = i;
+      } else {
+        matrix[i][j] = 0;
+      }
+    }
+  }
+
+  // Fill in the matrix
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // Deletion
+        matrix[i][j - 1] + 1, // Insertion
+        matrix[i - 1][j - 1] + cost // Substitution
+      );
+    }
+  }
+
+  // The bottom-right cell contains the Levenshtein distance
+  return matrix[a.length][b.length];
+};
+import { mouse, Point, straightTo } from "@nut-tree/nut-js";
+
+type BezierCurveType =
+  | "arc-above"
+  | "arc-below"
+  | "arc-left"
+  | "arc-right"
+  | "straight-line";
+
+export const moveMouseInHumanLikeWay = async (
+  startPoint: Point,
+  endPoint: Point,
+  curveType: BezierCurveType,
+  jitter: boolean = false
+) => {
+  // Speed up the mouse.
+  mouse.config.mouseSpeed = 20; // pixels per second
+
+  if (curveType === "straight-line") {
+    // Move the mouse in a straight line.
+    const pointsCount = 100;
+    const xIncrement = (endPoint.x - startPoint.x) / pointsCount;
+    const yIncrement = (endPoint.y - startPoint.y) / pointsCount;
+
+    for (let i = 0; i <= pointsCount; i++) {
+      let x = startPoint.x + i * xIncrement;
+      let y = startPoint.y + i * yIncrement;
+
+      if (jitter) {
+        // Add slight random deviations to the path.
+        const deltaX = (Math.random() - 0.5) * 5;
+        const deltaY = (Math.random() - 0.5) * 5;
+
+        x += deltaX;
+        y += deltaY;
+        await straightTo(new Point(x, y));
+
+        // Compensate by applying the opposite adjustment after each jitter.
+        x -= deltaX;
+        y -= deltaY;
+        await straightTo(new Point(x, y));
+      }
+    }
+    return;
+  }
+
+  // Calculate the control point for the bezier curve based on the curveType.
+  let controlPoint: Point;
+  if (curveType === "arc-above" || curveType === "arc-below") {
+    controlPoint = { x: (startPoint.x + endPoint.x) / 2, y: startPoint.y };
+  } else if (curveType === "arc-left" || curveType === "arc-right") {
+    controlPoint = { x: startPoint.x, y: (startPoint.y + endPoint.y) / 2 };
+  } else {
+    console.error(
+      "Invalid curve type. Please provide a valid curve type: 'arc-above', 'arc-below', 'arc-left', 'arc-right', or 'straight-line'."
+    );
+    return;
+  }
+
+  // Calculate the bezier curve points.
+  const bezierCurvePoints: Point[] = [];
+  for (let t = 0; t <= 1; t += 0.01) {
+    let x =
+      Math.pow(1 - t, 2) * startPoint.x +
+      2 * (1 - t) * t * controlPoint.x +
+      Math.pow(t, 2) * endPoint.x;
+    let y =
+      Math.pow(1 - t, 2) * startPoint.y +
+      2 * (1 - t) * t * controlPoint.y +
+      Math.pow(t, 2) * endPoint.y;
+
+    if (jitter) {
+      // Add slight random deviations to the path.
+      const deltaX = (Math.random() - 0.5) * 5;
+      const deltaY = (Math.random() - 0.5) * 5;
+
+      x += deltaX;
+      y += deltaY;
+      bezierCurvePoints.push({ x, y });
+
+      // Compensate by applying the opposite adjustment after each jitter.
+      x -= deltaX;
+      y -= deltaY;
+      bezierCurvePoints.push({ x, y });
+    }
+  }
+
+  // Move the mouse along the bezier curve points
+  await mouse.move(bezierCurvePoints);
+};
+export const preprocessStringForComparison = (str: string) => {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, "");
+};
+import crypto from "crypto";
+
+export const sha256Hash = (data: any) => {
+  const hash = crypto.createHash("sha256");
+  hash.update(data);
+  return hash.digest("hex");
+};
+import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
+import { sha256Hash } from "./sha256Hash.js";
+import sound from "sound-play";
+
+export const speakAsClonedVoice = async (text: string, actionsAudioDirectory: string) => {
+  // first convert the text using elevenlabs
+  try {
+  const hash = sha256Hash(text);
+  await saveToFileElevenLabs(hash, text, actionsAudioDirectory, false, process.env.ELEVEN_LABS_API_KEY, process.env.ELEVEN_LABS_VOICE_ID);
+  // then sound-play to play the produced mp3 file
+  const mp3FilePath = `${actionsAudioDirectory}/${hash}.mp3`;
+    await sound.play(mp3FilePath);
+    console.log("done");
+  } catch (error) {
+    console.error(error);
+    throw new Error("Error in speakAsClonedVoice "+ error);
+  }
+};
+export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));import {
+  Button,
+  centerOf,
+  Key,
+  keyboard,
+  mouse,
+  Point,
+  screen,
+  singleWord,
+  straightTo,
+} from "@nut-tree/nut-js";
+import { findFileWithCharacters } from "./utils/findFileWIthCharacters.js";
+import { findTextCoordinatesFromImage } from "./utils/findTextCoordinatesFromImage.js";
+import { speakAsClonedVoice } from "./utils/speakAsClonedVoice.js";
+import { wait } from "./utils/wait.js";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { exec } from "child_process";
+import { v4 as uuidv4 } from "uuid";
+import fs from "fs";
+
+// uncomment proper screen size as needed
+
+// standard 16:9 screen dimensions
+// const screenDimensions = { width: 1920, height: 1080 };
+
+// 2019 macbook pro 16" screen dimensions
+// const screenDimensions = { width: 3840, height: 2400 };
+const screenDimensions = { width: 1920, height: 1200 };
+
+const centerPoint = new Point(
+  screenDimensions.width / 2,
+  screenDimensions.height / 2
+);
+const upperThirdCenter = new Point(
+  screenDimensions.width / 2,
+  screenDimensions.height / 3
+);
+const upperThirdLeft = new Point(
+  screenDimensions.width / 3,
+  screenDimensions.height / 3
+);
+const bottomThirdCenter = new Point(
+  screenDimensions.width / 2,
+  (screenDimensions.height / 3) * 2
+);
+
+// Function to start QuickTime screen recording
+const startScreenRecording = async (filename: string) => {
+  // Start screen recording in the format of ~/Movies/CodeVideo_Recording<date>.mov
+
+  exec(`screencapture -v -g ${filename}`);
+
+  // Wait for the screen recording to start
+  await wait(2000);
+
+  // log that the screen recording has started
+  console.log(`Screen recording started at ${filename}`);
+};
+
+const executeAppleScript = (script: string) => {
+  return new Promise((resolve, reject) => {
+    exec(`osascript -e '${script}'`, (error: any, stdout: any, stderr: any) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        reject(stderr);
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+};
+
+const moveToRightDesktop = async () => {
+  console.log("Moving to right desktop");
+  // TODO: for some reason robotjs for some reason doesn't work with the control right command
+  // // 1. issue control right to get to the test vs code editor window
+  // keyTap("right", ["control"]);
+
+  // // 2. wait a bit so we can move to the proper screen
+  // await wait(2000);
+  try {
+    const script = `tell application "System Events" to key code 124 using control down`;
+    await executeAppleScript(script);
+    console.log("Command executed successfully.");
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+};
+
+const moveToLeftDesktop = async () => {
+  try {
+    console.log("Moving to left desktop");
+    const script = `tell application "System Events" to key code 123 using control down`;
+    await executeAppleScript(script);
+    console.log("Command executed successfully.");
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+};
+
+const moveMouseToCenterOfScreen = async () => {
+  console.log("Moving mouse to center of screen");
+  // move the mouse to the center of the 1920x1080 screen
+  await mouse.move(straightTo(centerPoint));
+};
+
+const moveMouseToTopLeftOfScreen = async () => {
+  console.log("Moving mouse to top left of screen");
+  await mouse.move(straightTo(new Point(0, 0)));
+};
+
+const moveMouseToTopRightOfScreen = async () => {
+  console.log("Moving mouse to top right of screen");
+  await mouse.move(straightTo(new Point(screenDimensions.width, 0)));
+};
+
+const moveMouseToBottomRightOfScreen = async () => {
+  console.log("Moving mouse to bottom right of screen");
+  await mouse.move(
+    straightTo(new Point(screenDimensions.width, screenDimensions.height))
+  );
+};
+
+const moveMouseToBottomLeftOfScreen = async () => {
+  console.log("Moving mouse to bottom left of screen");
+  await mouse.move(straightTo(new Point(0, screenDimensions.height)));
+};
+
+const clickVSCodeFileOrFolderByName = async (fileOrFolderName: string) => {
+  // // issue command shift 3 to take a screenshot
+  console.log("Taking screenshot")
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Releasing keys")
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Screenshot taken")
+
+  // wait a bit for the screenshot to be taken and find coordinates of text and everything
+  await wait(3000);
+
+  // get the file name of the screenshot
+  // TODO: super flakey :)
+  const screenshotFileName = findFileWithCharacters(
+    "/Users/chris/Desktop",
+    "Screenshot"
+  );
+
+  if (!screenshotFileName) {
+    throw new Error("Screenshot not found");
+    return;
+  } else {
+    console.log(`Screenshot found at ${screenshotFileName}`);
+  }
+
+  // use the screenshot to find the coordinates of the "helloworld.ts" file
+  const filePoint = await findTextCoordinatesFromImage(
+    screenshotFileName,
+    fileOrFolderName
+  );
+
+  if (!filePoint) {
+    throw new Error(
+      `Coordinates for text ${fileOrFolderName} not found, used file ${screenshotFileName}`
+    );
+  }
+
+  console.log(
+    `Coordinates for text ${fileOrFolderName} found at ${filePoint.x}, ${filePoint.y}`
+  );
+
+  const pointfound = await screen.find(singleWord(fileOrFolderName));
+  console.log("pointfound", pointfound);
+
+  // move to the file
+  // await moveMouseInHumanLikeWay(centerPoint, filePoint, "arc-above", false);
+  const point = new Point(filePoint.x, filePoint.y);
+  await mouse.move(straightTo(point));
+
+  // need a license for the ocr plugin for this
+  // await mouse.move(
+  //   straightTo(
+  //     centerOf(
+  //       screen.find(
+  //         singleWord(fileOrFolderName)
+  //       )
+  //     )
+  //   )
+  // );
+
+  // wait a bit to move to the file
+  await wait(1000);
+
+  // click to open the file
+  await mouse.click(Button.LEFT);
+
+  // wait a bit for the file to open
+  await wait(1000);
+};
+
+const moveUpperThirdCenter = async () => {
+  await mouse.move(
+    straightTo(new Point(upperThirdCenter.x, upperThirdCenter.y))
+  );
+};
+
+const moveUpperThirdLeft = async () => {
+  await mouse.move(straightTo(new Point(upperThirdLeft.x, upperThirdCenter.y)));
+};
+
+const moveBottomThirdCenter = async () => {
+  await mouse.move(
+    straightTo(new Point(bottomThirdCenter.x, bottomThirdCenter.y))
+  );
+};
+
+const moveRelativeTo = async (x: number, y: number) => {
+  const currentPosition = await mouse.getPosition();
+  await mouse.move(
+    straightTo(new Point(currentPosition.x + x, currentPosition.y + y))
+  );
+};
+
+const createFolder = async (folderName: string) => {
+  // move to upper third left
+  await moveUpperThirdLeft();
+  // right click
+  await mouse.click(Button.RIGHT);
+  // move down 20px and right 5
+  await moveRelativeTo(20, 5);
+  // left click
+  await mouse.click(Button.LEFT);
+  // type name
+  await keyboard.type(folderName);
+  // press enter
+  await keyboard.pressKey(Key.Enter);
+};
+
+const createFile = async (fullFileName: string) => {
+  // get file name
+  const fileName = fullFileName.split("/").pop();
+  if (!fileName) {
+    return;
+  }
+  // get folder name
+  const folderName = fullFileName.split("/").slice(0, -1).join("/");
+  // click it
+  await clickVSCodeFileOrFolderByName(folderName);
+  // right click it
+  await mouse.click(Button.RIGHT);
+  // move down 20px and right 5 to click 'New File...'
+  await moveRelativeTo(5, 5);
+  // type the file name
+  await keyboard.type(fileName);
+  // press enter
+  await keyboard.pressKey(Key.Enter);
+};
+
+const prepareDesktopForRecording = async (filename: string) => {
+  await moveToRightDesktop();
+
+  // wait 1 second for desktop to switch
+  await wait(1000);
+
+  // start screen recording
+  await startScreenRecording(filename);
+
+  await moveMouseToCenterOfScreen();
+
+  // click to ensure screen is in focus
+  await mouse.click(Button.LEFT);
+
+  console.log("Desktop successfully prepared for recording");
+};
+
+const tearDownRecording = async () => {
+  // move us back to the left desktop
+  await moveToLeftDesktop();
+
+  // kill this process
+  process.exit();
+};
+
+export const executeActionsWithVisualStudioCodeDesktop = async (
+  actions: Array<IAction>
+) => {
+  const guid = uuidv4();
+  const currentWorkingDirectory = process.cwd();
+  const actionsAudioDirectory = `${currentWorkingDirectory}/tmp/audio/${guid}`;
+  // create tmp/video/guid folder if it doesn't exist
+  if (!fs.existsSync(actionsAudioDirectory)) {
+    fs.mkdirSync(actionsAudioDirectory, { recursive: true });
+  }
+
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
+    console.log(
+      `Executing action ${i + 1} of ${actions.length}: ${JSON.stringify(
+        action
+      )}`
+    );
+    switch (action.name) {
+      case "speak-before":
+        await speakAsClonedVoice(action.value, actionsAudioDirectory);
+        break;
+      case "type-editor":
+        await keyboard.type(action.value);
+        break;
+      case "click-editor":
+        // click somewhere near the top of the editor to make sure we can type in it
+        await moveUpperThirdCenter();
+        // wait a bit for mouse to move
+        await wait(1000);
+        // click in the file!
+        await mouse.click(Button.LEFT);
+        break;
+      case "click-terminal":
+        await moveBottomThirdCenter();
+        await wait(1000);
+        await mouse.click(Button.LEFT);
+        break;
+      case "type-terminal":
+        await keyboard.type(action.value);
+        break;
+      case "click-filename":
+        await clickVSCodeFileOrFolderByName(action.value);
+        break;
+      case "create-folder":
+        await createFolder(action.value);
+        break;
+      case "create-file":
+        await createFile(action.value);
+      case "open-terminal":
+        await keyboard.pressKey(Key.LeftControl, Key.LeftShift, Key.Grave);
+        // wait a bit to let the terminal open
+        await wait(3000);
+        break;
+      case "save":
+        await keyboard.pressKey(Key.LeftCmd, Key.S);
+        break;
+      case "enter":
+        await keyboard.pressKey(Key.Enter);
+        break;
+      default:
+        console.log(`Action ${action.name} not found`);
+        break;
+    }
+  }
+};
+
+const run = async () => {
+  // const filename = `~/Movies/CodeVideo_Recording${Date.now()}.mov`;
+  // await prepareDesktopForRecording(filename);
+  // const { default: actions } = await import(
+  //   "../examples/visual-studio-code-console-log.json",
+  //   { assert: { type: "json" } }
+  // );
+  // await executeActionsWithVisualStudioCodeDesktop(actions as Array<IAction>);
+  // await tearDownRecording();
+
+  // for sanity checks
+  // await moveMouseToCenterOfScreen();
+  // await moveMouseToTopLeftOfScreen();
+  // await moveMouseToTopRightOfScreen();
+  // await moveMouseToBottomRightOfScreen();
+  // await moveMouseToBottomLeftOfScreen();
+  // await moveMouseToCenterOfScreen();
+
+  // const filename = `~/Movies/CodeVideo_Recording${Date.now()}.mov`;
+
+  // await prepareDesktopForRecording(filename);
+
+  // await moveMouseToCenterOfScreen();
+
+  // await clickVSCodeFileOrFolderByName("hello-world.js");
+
+  console.log("Taking screenshot")
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Releasing keys")
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Screenshot taken")
+
+  console.log("Taking screenshot")
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Releasing keys")
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Screenshot taken")
+};
+
+run();
+import { spawn } from "child_process";
+import { promisify } from "util";
+import { addAudioToVideo } from "./audio/addAudioToVideo.js";
+import { buildAudioFile } from "./audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
+import { loadActions } from "./io/loadActions.js";
+import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
+
+// Promisify spawn
+const spawnAsync = promisify(spawn);
+
+// Promisify kill
+const killAsync = (childProcess: any, signal?: any) => {
+  return new Promise<{ code?: number | null, signal?: NodeJS.Signals }>((resolve, reject) => {
+    childProcess.on('exit', (code: any, signal: any) => {
+      resolve({ code, signal });
+    });
+    childProcess.kill(signal);
+  });
+};
+
+
+const startVisualStudioCodeWeb = async () => {
+  try {
+  console.log("Starting Visual Studio Code for Web...");
+  // start visual studio code for web in a background process
+  const webProcess = await spawnAsync("code", ["serve-web", "--without-connection-token"], {});
+  return webProcess;
+  } catch (error) {
+    console.error("Error starting Visual Studio Code for Web", error);
+    return null;
+  }
+}
+
+const makeVideo = async () => {
+  const { actions, videoFile, actionsAudioDirectory, textToSpeechOption } =
+    await loadActions();
+
+  // first convert scripts to audio
+  const audioFiles = await convertSpeakActionsToAudio(
+    actions,
+    actionsAudioDirectory,
+    false,
+    textToSpeechOption
+  );
+
+  const webProcess = startVisualStudioCodeWeb();
+  const currentWorkingDir = process.cwd();
+  // the default workspace is in the src/visual-studio-code-for-web directory
+  const url = `http://127.0.0.1:8000/?folder=${currentWorkingDir}/src/visual-studio-code-for-web-workspace`;
+
+  // then run the puppeteer automation, which records the video and returns the start times of each audio
+  const audioStartTimes = await runPuppeteerAutomation(
+    url,
+    videoFile,
+    actions,
+    actionsAudioDirectory,
+    'visual-studio-code-web'
+  );
+
+  // now that we have the offset delays for each audio, build the audio file
+  await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+
+  // then combine the audio and video files
+  // TODO: quick fix for videoDirectory is the videoFile without the file name
+  const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+  await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
+
+  // kill the web process
+  await killAsync(webProcess, "SIGINT");
+};
+
+makeVideo();
+import * as fs from 'fs';
+import * as path from 'path';
+
+export const findFileWithCharacters = (directory: string, characters: string) => {
+    const files = fs.readdirSync(directory);
+
+    for (const file of files) {
+        if (file.includes(characters)) {
+            return path.join(directory, file);
+        }
+    }
+
+    return null;
+}import { Bbox, Block, createWorker, PSM } from "tesseract.js";
+import Jimp from "jimp";
+import { IPoint } from "@fullstackcraftllc/codevideo-types";
+import fs from "fs";
+
+export const findTextCoordinatesFromImage = async (
+  imagePath: string,
+  searchText: string
+): Promise<IPoint | undefined> => {
+  const worker = await createWorker();
+  await worker.setParameters({
+    tessedit_char_whitelist:
+      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+{}|:\"<>?~`-=[]\\;',./",
+    tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+  });
+
+  const image = await Jimp.read(imagePath);
+  const imageBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+  const { data } = await worker.recognize(imageBuffer);
+
+  // helpful for debugging: log each text block
+  // data.blocks?.forEach((block: Block) => {
+  //   console.log(block.text);
+  // });
+
+  const bounds = data.blocks
+    ?.filter(({ text }) => text.trim().includes(searchText))
+    .map((block: Block) => {
+      // console.log("found block: ", block)
+      const boundingBox: Bbox = block.bbox;
+      // full bounding box
+      // return {
+      //   x0: boundingBox.x0,
+      //   y0: boundingBox.y0,
+      //   x1: boundingBox.x1,
+      //   y1: boundingBox.y1,
+      // };
+      // for IPoint, return average of x and y
+      return {
+        x: (boundingBox.x0 + boundingBox.x1) / 2,
+        y: (boundingBox.y0 + boundingBox.y1) / 2,
+      };
+    })
+    .at(0);
+
+  await worker.terminate();
+
+  // delete the image from the file system as cleanup
+  console.log("deleting image")
+  fs.unlinkSync(imagePath);
+
+  return bounds;
+};
+import fs from "fs";
+import os from "os";
+import { addAudioToVideo } from "../audio/addAudioToVideo.js";
+import { buildAudioFile } from "../audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
+import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
+import { IGenerateVideoFromActionsOptions } from "../interfaces/IGenerateVideoFromActionsOptions.js";
+import { v4 as uuidv4 } from 'uuid';
+
+// using series of functions
+export const generateVideoFromActions = async (options: IGenerateVideoFromActionsOptions): Promise<{videoBuffer: Buffer, pathToFile: string, guid: string}> => {
+  const { actions, language, textToSpeechOption, initialCode, ttsApiKey, ttsVoiceId, guid } = options;
+  // use the guid for the file name if it was passed, otherwise generate one
+  // we need to do this to prevent deadlocks when running multiple instances of the function concurrently
+  // every request has its own little playground folder to work in
+  const fileNameWithoutExtension = guid ? guid : uuidv4();
+  const currentWorkingDirectory = process.cwd();
+  
+  let resolvedTextToSpeechOption = textToSpeechOption;
+  if (os.platform() === "linux" && textToSpeechOption === "sayjs") {
+    console.log("sayjs is only supported on windows and mac, using festival instead");
+    resolvedTextToSpeechOption = "festival";
+  }
+
+  // if we don't do this, initialcode resolves literally to the string "undefined"
+  let resolvedInitialCode = initialCode;
+  // now url encode the initial code
+  resolvedInitialCode = encodeURIComponent(resolvedInitialCode || "");
+
+  // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
+  const directoryOfEditorHtmlFile = process.env.EDITOR_SOURCE === "development" ? 
+  `${currentWorkingDirectory}/src/monaco-localhost-single-file-editor` : 
+  `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;
+  const editorUrl = `file://${directoryOfEditorHtmlFile}/editor.html?language=${language}&initialCode=${resolvedInitialCode}`;
+
+  // create all folders as needed if they don't exist
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp`, { recursive: true });
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp/video`, { recursive: true });
+  fs.mkdirSync(`${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`, { recursive: true });
+
+  const audioDirectory = `${currentWorkingDirectory}/tmp/audio/${fileNameWithoutExtension}`;
+  const videoDirectory = `${currentWorkingDirectory}/tmp/video`;
+  const videoFile = `${currentWorkingDirectory}/tmp/video/${fileNameWithoutExtension}.mp4`;
+
+  // first convert scripts to audio
+  const audioFiles = await convertSpeakActionsToAudio(
+    actions,
+    audioDirectory,
+    false,
+    resolvedTextToSpeechOption,
+    ttsApiKey,
+    ttsVoiceId
+  );
+
+  // then run the puppeteer automation, which records the video and returns the start times of each audio
+  const audioStartTimes = await runPuppeteerAutomation(
+    editorUrl,
+    videoFile,
+    actions,
+    audioDirectory,
+    "monaco-single-editor"
+  );
+
+  // now that we have the offset delays for each audio, build the audio file
+  await buildAudioFile(audioDirectory, audioFiles, audioStartTimes);
+
+  // then combine the audio and video files
+  await addAudioToVideo(fileNameWithoutExtension, videoDirectory, videoFile, audioDirectory);
+
+  const videoBuffer  = await fs.promises.readFile(videoFile);
+
+  // return relevant information
+  return {
+    videoBuffer,
+    pathToFile: videoFile,
+    guid: fileNameWithoutExtension
+  }
+};
+
+import puppeteer, { ElementHandle, Page } from 'puppeteer';
+
+const type = async (page: Page, text: string) => {
+  await page.keyboard.type(text, { delay: 75 });
+};
+
+const issuePageCommand = async (page: Page, command: string, value: string) => {
+  switch (command) {
+    case 'new-file':
+      await page.keyboard.down('Control');
+      await page.keyboard.down('Alt');
+      await page.keyboard.down('Meta');
+      await page.keyboard.press('N');
+      await page.keyboard.up('Control');
+      await page.keyboard.up('Alt');
+      await page.keyboard.up('Meta');
+      break;
+
+    case 'type-editor':
+      const editorDiv = await page.waitForSelector('.view-lines.monaco-mouse-cursor-text');
+      await editorDiv?.click();
+      await type(page, value);
+      break;
+
+    case 'click-editor':
+      const editorDivClick = await page.waitForSelector('.view-lines.monaco-mouse-cursor-text');
+      await editorDivClick?.click();
+      break;
+
+    case 'execute-terminal-command':
+      const terminalCanvas = await page.waitForSelector('.xterm-link-layer');
+      await terminalCanvas?.click();
+      await type(page, value);
+      await page.keyboard.press('Enter');
+      break;
+
+    case 'click-terminal':
+      const terminalClick = await page.waitForSelector('.xterm-link-layer');
+      await terminalClick?.click();
+      break;
+
+    case 'open-file':
+      const openFileSpan = await page.waitForXPath(`//span[@class="monaco-highlighted-label" and text()="${value}"]`) as ElementHandle<Element>;
+      await openFileSpan?.click();
+      break;
+
+    case 'up-arrow':
+      await page.keyboard.press('ArrowUp');
+      break;
+
+    case 'down-arrow':
+      await page.keyboard.press('ArrowDown');
+      break;
+
+    case 'enter':
+      await page.keyboard.press('Enter');
+      break;
+
+    default:
+      throw new Error(`Unsupported command: ${command}`);
+  }
+};
+
+export { issuePageCommand };
+export const levenshteinDistance = (a: string, b: string): number => {
+  const matrix: number[][] = [];
+
+  // Initialize matrix
+  for (let i = 0; i <= a.length; i++) {
+    matrix[i] = [];
+    for (let j = 0; j <= b.length; j++) {
+      if (i === 0) {
+        matrix[i][j] = j;
+      } else if (j === 0) {
+        matrix[i][j] = i;
+      } else {
+        matrix[i][j] = 0;
+      }
+    }
+  }
+
+  // Fill in the matrix
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // Deletion
+        matrix[i][j - 1] + 1, // Insertion
+        matrix[i - 1][j - 1] + cost // Substitution
+      );
+    }
+  }
+
+  // The bottom-right cell contains the Levenshtein distance
+  return matrix[a.length][b.length];
+};
+import { mouse, Point, straightTo } from "@nut-tree/nut-js";
+
+type BezierCurveType =
+  | "arc-above"
+  | "arc-below"
+  | "arc-left"
+  | "arc-right"
+  | "straight-line";
+
+export const moveMouseInHumanLikeWay = async (
+  startPoint: Point,
+  endPoint: Point,
+  curveType: BezierCurveType,
+  jitter: boolean = false
+) => {
+  // Speed up the mouse.
+  mouse.config.mouseSpeed = 20; // pixels per second
+
+  if (curveType === "straight-line") {
+    // Move the mouse in a straight line.
+    const pointsCount = 100;
+    const xIncrement = (endPoint.x - startPoint.x) / pointsCount;
+    const yIncrement = (endPoint.y - startPoint.y) / pointsCount;
+
+    for (let i = 0; i <= pointsCount; i++) {
+      let x = startPoint.x + i * xIncrement;
+      let y = startPoint.y + i * yIncrement;
+
+      if (jitter) {
+        // Add slight random deviations to the path.
+        const deltaX = (Math.random() - 0.5) * 5;
+        const deltaY = (Math.random() - 0.5) * 5;
+
+        x += deltaX;
+        y += deltaY;
+        await straightTo(new Point(x, y));
+
+        // Compensate by applying the opposite adjustment after each jitter.
+        x -= deltaX;
+        y -= deltaY;
+        await straightTo(new Point(x, y));
+      }
+    }
+    return;
+  }
+
+  // Calculate the control point for the bezier curve based on the curveType.
+  let controlPoint: Point;
+  if (curveType === "arc-above" || curveType === "arc-below") {
+    controlPoint = { x: (startPoint.x + endPoint.x) / 2, y: startPoint.y };
+  } else if (curveType === "arc-left" || curveType === "arc-right") {
+    controlPoint = { x: startPoint.x, y: (startPoint.y + endPoint.y) / 2 };
+  } else {
+    console.error(
+      "Invalid curve type. Please provide a valid curve type: 'arc-above', 'arc-below', 'arc-left', 'arc-right', or 'straight-line'."
+    );
+    return;
+  }
+
+  // Calculate the bezier curve points.
+  const bezierCurvePoints: Point[] = [];
+  for (let t = 0; t <= 1; t += 0.01) {
+    let x =
+      Math.pow(1 - t, 2) * startPoint.x +
+      2 * (1 - t) * t * controlPoint.x +
+      Math.pow(t, 2) * endPoint.x;
+    let y =
+      Math.pow(1 - t, 2) * startPoint.y +
+      2 * (1 - t) * t * controlPoint.y +
+      Math.pow(t, 2) * endPoint.y;
+
+    if (jitter) {
+      // Add slight random deviations to the path.
+      const deltaX = (Math.random() - 0.5) * 5;
+      const deltaY = (Math.random() - 0.5) * 5;
+
+      x += deltaX;
+      y += deltaY;
+      bezierCurvePoints.push({ x, y });
+
+      // Compensate by applying the opposite adjustment after each jitter.
+      x -= deltaX;
+      y -= deltaY;
+      bezierCurvePoints.push({ x, y });
+    }
+  }
+
+  // Move the mouse along the bezier curve points
+  await mouse.move(bezierCurvePoints);
+};
+export const preprocessStringForComparison = (str: string) => {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, "");
+};
+import crypto from "crypto";
+
+export const sha256Hash = (data: any) => {
+  const hash = crypto.createHash("sha256");
+  hash.update(data);
+  return hash.digest("hex");
+};
+import { saveToFileElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
+import { sha256Hash } from "./sha256Hash.js";
+import sound from "sound-play";
+
+export const speakAsClonedVoice = async (text: string, actionsAudioDirectory: string) => {
+  // first convert the text using elevenlabs
+  try {
+  const hash = sha256Hash(text);
+  await saveToFileElevenLabs(hash, text, actionsAudioDirectory, false, process.env.ELEVEN_LABS_API_KEY, process.env.ELEVEN_LABS_VOICE_ID);
+  // then sound-play to play the produced mp3 file
+  const mp3FilePath = `${actionsAudioDirectory}/${hash}.mp3`;
+    await sound.play(mp3FilePath);
+    console.log("done");
+  } catch (error) {
+    console.error(error);
+    throw new Error("Error in speakAsClonedVoice "+ error);
+  }
+};
+export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));import {
+  Button,
+  centerOf,
+  Key,
+  keyboard,
+  mouse,
+  Point,
+  screen,
+  singleWord,
+  straightTo,
+} from "@nut-tree/nut-js";
+import { findFileWithCharacters } from "./utils/findFileWIthCharacters.js";
+import { findTextCoordinatesFromImage } from "./utils/findTextCoordinatesFromImage.js";
+import { speakAsClonedVoice } from "./utils/speakAsClonedVoice.js";
+import { wait } from "./utils/wait.js";
+import { IAction } from "@fullstackcraftllc/codevideo-types";
+import { exec } from "child_process";
+import { v4 as uuidv4 } from "uuid";
+import fs from "fs";
+
+// uncomment proper screen size as needed
+
+// standard 16:9 screen dimensions
+// const screenDimensions = { width: 1920, height: 1080 };
+
+// 2019 macbook pro 16" screen dimensions
+// const screenDimensions = { width: 3840, height: 2400 };
+const screenDimensions = { width: 1920, height: 1200 };
+
+const centerPoint = new Point(
+  screenDimensions.width / 2,
+  screenDimensions.height / 2
+);
+const upperThirdCenter = new Point(
+  screenDimensions.width / 2,
+  screenDimensions.height / 3
+);
+const upperThirdLeft = new Point(
+  screenDimensions.width / 3,
+  screenDimensions.height / 3
+);
+const bottomThirdCenter = new Point(
+  screenDimensions.width / 2,
+  (screenDimensions.height / 3) * 2
+);
+
+// Function to start QuickTime screen recording
+const startScreenRecording = async (filename: string) => {
+  // Start screen recording in the format of ~/Movies/CodeVideo_Recording<date>.mov
+
+  exec(`screencapture -v -g ${filename}`);
+
+  // Wait for the screen recording to start
+  await wait(2000);
+
+  // log that the screen recording has started
+  console.log(`Screen recording started at ${filename}`);
+};
+
+const executeAppleScript = (script: string) => {
+  return new Promise((resolve, reject) => {
+    exec(`osascript -e '${script}'`, (error: any, stdout: any, stderr: any) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        reject(stderr);
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+};
+
+const moveToRightDesktop = async () => {
+  console.log("Moving to right desktop");
+  // TODO: for some reason robotjs for some reason doesn't work with the control right command
+  // // 1. issue control right to get to the test vs code editor window
+  // keyTap("right", ["control"]);
+
+  // // 2. wait a bit so we can move to the proper screen
+  // await wait(2000);
+  try {
+    const script = `tell application "System Events" to key code 124 using control down`;
+    await executeAppleScript(script);
+    console.log("Command executed successfully.");
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+};
+
+const moveToLeftDesktop = async () => {
+  try {
+    console.log("Moving to left desktop");
+    const script = `tell application "System Events" to key code 123 using control down`;
+    await executeAppleScript(script);
+    console.log("Command executed successfully.");
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+};
+
+const moveMouseToCenterOfScreen = async () => {
+  console.log("Moving mouse to center of screen");
+  // move the mouse to the center of the 1920x1080 screen
+  await mouse.move(straightTo(centerPoint));
+};
+
+const moveMouseToTopLeftOfScreen = async () => {
+  console.log("Moving mouse to top left of screen");
+  await mouse.move(straightTo(new Point(0, 0)));
+};
+
+const moveMouseToTopRightOfScreen = async () => {
+  console.log("Moving mouse to top right of screen");
+  await mouse.move(straightTo(new Point(screenDimensions.width, 0)));
+};
+
+const moveMouseToBottomRightOfScreen = async () => {
+  console.log("Moving mouse to bottom right of screen");
+  await mouse.move(
+    straightTo(new Point(screenDimensions.width, screenDimensions.height))
+  );
+};
+
+const moveMouseToBottomLeftOfScreen = async () => {
+  console.log("Moving mouse to bottom left of screen");
+  await mouse.move(straightTo(new Point(0, screenDimensions.height)));
+};
+
+const clickVSCodeFileOrFolderByName = async (fileOrFolderName: string) => {
+  // // issue command shift 3 to take a screenshot
+  console.log("Taking screenshot")
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Releasing keys")
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Screenshot taken")
+
+  // wait a bit for the screenshot to be taken and find coordinates of text and everything
+  await wait(3000);
+
+  // get the file name of the screenshot
+  // TODO: super flakey :)
+  const screenshotFileName = findFileWithCharacters(
+    "/Users/chris/Desktop",
+    "Screenshot"
+  );
+
+  if (!screenshotFileName) {
+    throw new Error("Screenshot not found");
+    return;
+  } else {
+    console.log(`Screenshot found at ${screenshotFileName}`);
+  }
+
+  // use the screenshot to find the coordinates of the "helloworld.ts" file
+  const filePoint = await findTextCoordinatesFromImage(
+    screenshotFileName,
+    fileOrFolderName
+  );
+
+  if (!filePoint) {
+    throw new Error(
+      `Coordinates for text ${fileOrFolderName} not found, used file ${screenshotFileName}`
+    );
+  }
+
+  console.log(
+    `Coordinates for text ${fileOrFolderName} found at ${filePoint.x}, ${filePoint.y}`
+  );
+
+  const pointfound = await screen.find(singleWord(fileOrFolderName));
+  console.log("pointfound", pointfound);
+
+  // move to the file
+  // await moveMouseInHumanLikeWay(centerPoint, filePoint, "arc-above", false);
+  const point = new Point(filePoint.x, filePoint.y);
+  await mouse.move(straightTo(point));
+
+  // need a license for the ocr plugin for this
+  // await mouse.move(
+  //   straightTo(
+  //     centerOf(
+  //       screen.find(
+  //         singleWord(fileOrFolderName)
+  //       )
+  //     )
+  //   )
+  // );
+
+  // wait a bit to move to the file
+  await wait(1000);
+
+  // click to open the file
+  await mouse.click(Button.LEFT);
+
+  // wait a bit for the file to open
+  await wait(1000);
+};
+
+const moveUpperThirdCenter = async () => {
+  await mouse.move(
+    straightTo(new Point(upperThirdCenter.x, upperThirdCenter.y))
+  );
+};
+
+const moveUpperThirdLeft = async () => {
+  await mouse.move(straightTo(new Point(upperThirdLeft.x, upperThirdCenter.y)));
+};
+
+const moveBottomThirdCenter = async () => {
+  await mouse.move(
+    straightTo(new Point(bottomThirdCenter.x, bottomThirdCenter.y))
+  );
+};
+
+const moveRelativeTo = async (x: number, y: number) => {
+  const currentPosition = await mouse.getPosition();
+  await mouse.move(
+    straightTo(new Point(currentPosition.x + x, currentPosition.y + y))
+  );
+};
+
+const createFolder = async (folderName: string) => {
+  // move to upper third left
+  await moveUpperThirdLeft();
+  // right click
+  await mouse.click(Button.RIGHT);
+  // move down 20px and right 5
+  await moveRelativeTo(20, 5);
+  // left click
+  await mouse.click(Button.LEFT);
+  // type name
+  await keyboard.type(folderName);
+  // press enter
+  await keyboard.pressKey(Key.Enter);
+};
+
+const createFile = async (fullFileName: string) => {
+  // get file name
+  const fileName = fullFileName.split("/").pop();
+  if (!fileName) {
+    return;
+  }
+  // get folder name
+  const folderName = fullFileName.split("/").slice(0, -1).join("/");
+  // click it
+  await clickVSCodeFileOrFolderByName(folderName);
+  // right click it
+  await mouse.click(Button.RIGHT);
+  // move down 20px and right 5 to click 'New File...'
+  await moveRelativeTo(5, 5);
+  // type the file name
+  await keyboard.type(fileName);
+  // press enter
+  await keyboard.pressKey(Key.Enter);
+};
+
+const prepareDesktopForRecording = async (filename: string) => {
+  await moveToRightDesktop();
+
+  // wait 1 second for desktop to switch
+  await wait(1000);
+
+  // start screen recording
+  await startScreenRecording(filename);
+
+  await moveMouseToCenterOfScreen();
+
+  // click to ensure screen is in focus
+  await mouse.click(Button.LEFT);
+
+  console.log("Desktop successfully prepared for recording");
+};
+
+const tearDownRecording = async () => {
+  // move us back to the left desktop
+  await moveToLeftDesktop();
+
+  // kill this process
+  process.exit();
+};
+
+export const executeActionsWithVisualStudioCodeDesktop = async (
+  actions: Array<IAction>
+) => {
+  const guid = uuidv4();
+  const currentWorkingDirectory = process.cwd();
+  const actionsAudioDirectory = `${currentWorkingDirectory}/tmp/audio/${guid}`;
+  // create tmp/video/guid folder if it doesn't exist
+  if (!fs.existsSync(actionsAudioDirectory)) {
+    fs.mkdirSync(actionsAudioDirectory, { recursive: true });
+  }
+
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
+    console.log(
+      `Executing action ${i + 1} of ${actions.length}: ${JSON.stringify(
+        action
+      )}`
+    );
+    switch (action.name) {
+      case "speak-before":
+        await speakAsClonedVoice(action.value, actionsAudioDirectory);
+        break;
+      case "type-editor":
+        await keyboard.type(action.value);
+        break;
+      case "click-editor":
+        // click somewhere near the top of the editor to make sure we can type in it
+        await moveUpperThirdCenter();
+        // wait a bit for mouse to move
+        await wait(1000);
+        // click in the file!
+        await mouse.click(Button.LEFT);
+        break;
+      case "click-terminal":
+        await moveBottomThirdCenter();
+        await wait(1000);
+        await mouse.click(Button.LEFT);
+        break;
+      case "type-terminal":
+        await keyboard.type(action.value);
+        break;
+      case "click-filename":
+        await clickVSCodeFileOrFolderByName(action.value);
+        break;
+      case "create-folder":
+        await createFolder(action.value);
+        break;
+      case "create-file":
+        await createFile(action.value);
+      case "open-terminal":
+        await keyboard.pressKey(Key.LeftControl, Key.LeftShift, Key.Grave);
+        // wait a bit to let the terminal open
+        await wait(3000);
+        break;
+      case "save":
+        await keyboard.pressKey(Key.LeftCmd, Key.S);
+        break;
+      case "enter":
+        await keyboard.pressKey(Key.Enter);
+        break;
+      default:
+        console.log(`Action ${action.name} not found`);
+        break;
+    }
+  }
+};
+
+const run = async () => {
+  // const filename = `~/Movies/CodeVideo_Recording${Date.now()}.mov`;
+  // await prepareDesktopForRecording(filename);
+  // const { default: actions } = await import(
+  //   "../examples/visual-studio-code-console-log.json",
+  //   { assert: { type: "json" } }
+  // );
+  // await executeActionsWithVisualStudioCodeDesktop(actions as Array<IAction>);
+  // await tearDownRecording();
+
+  // for sanity checks
+  // await moveMouseToCenterOfScreen();
+  // await moveMouseToTopLeftOfScreen();
+  // await moveMouseToTopRightOfScreen();
+  // await moveMouseToBottomRightOfScreen();
+  // await moveMouseToBottomLeftOfScreen();
+  // await moveMouseToCenterOfScreen();
+
+  // const filename = `~/Movies/CodeVideo_Recording${Date.now()}.mov`;
+
+  // await prepareDesktopForRecording(filename);
+
+  // await moveMouseToCenterOfScreen();
+
+  // await clickVSCodeFileOrFolderByName("hello-world.js");
+
+  console.log("Taking screenshot")
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Releasing keys")
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Screenshot taken")
+
+  console.log("Taking screenshot")
+  await keyboard.pressKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Releasing keys")
+  await keyboard.releaseKey(Key.LeftCmd, Key.LeftShift, 3);
+  console.log("Screenshot taken")
+};
+
+run();
+import { spawn } from "child_process";
+import { promisify } from "util";
+import { addAudioToVideo } from "./audio/addAudioToVideo.js";
+import { buildAudioFile } from "./audio/buildAudioFile.js";
+import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
+import { loadActions } from "./io/loadActions.js";
+import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
+
+// Promisify spawn
+const spawnAsync = promisify(spawn);
+
+// Promisify kill
+const killAsync = (childProcess: any, signal?: any) => {
+  return new Promise<{ code?: number | null, signal?: NodeJS.Signals }>((resolve, reject) => {
+    childProcess.on('exit', (code: any, signal: any) => {
+      resolve({ code, signal });
+    });
+    childProcess.kill(signal);
+  });
+};
+
+
+const startVisualStudioCodeWeb = async () => {
+  try {
+  console.log("Starting Visual Studio Code for Web...");
+  // start visual studio code for web in a background process
+  const webProcess = await spawnAsync("code", ["serve-web", "--without-connection-token"], {});
+  return webProcess;
+  } catch (error) {
+    console.error("Error starting Visual Studio Code for Web", error);
+    return null;
+  }
+}
+
+const makeVideo = async () => {
+  const { actions, videoFile, actionsAudioDirectory, textToSpeechOption } =
+    await loadActions();
+
+  // first convert scripts to audio
+  const audioFiles = await convertSpeakActionsToAudio(
+    actions,
+    actionsAudioDirectory,
+    false,
+    textToSpeechOption
+  );
+
+  const webProcess = startVisualStudioCodeWeb();
+  const currentWorkingDir = process.cwd();
+  // the default workspace is in the src/visual-studio-code-for-web directory
+  const url = `http://127.0.0.1:8000/?folder=${currentWorkingDir}/src/visual-studio-code-for-web-workspace`;
+
+  // then run the puppeteer automation, which records the video and returns the start times of each audio
+  const audioStartTimes = await runPuppeteerAutomation(
+    url,
+    videoFile,
+    actions,
+    actionsAudioDirectory,
+    'visual-studio-code-web'
+  );
+
+  // now that we have the offset delays for each audio, build the audio file
+  await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
+
+  // then combine the audio and video files
+  // TODO: quick fix for videoDirectory is the videoFile without the file name
+  const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+  await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
+
+  // kill the web process
+  await killAsync(webProcess, "SIGINT");
+};
+
+makeVideo();

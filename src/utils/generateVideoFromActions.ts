@@ -8,7 +8,7 @@ import { IGenerateVideoFromActionsOptions } from "../interfaces/IGenerateVideoFr
 import { v4 as uuidv4 } from 'uuid';
 
 // using series of functions
-export const generateVideoFromActions = async (options: IGenerateVideoFromActionsOptions): Promise<Buffer> => {
+export const generateVideoFromActions = async (options: IGenerateVideoFromActionsOptions): Promise<{videoBuffer: Buffer, pathToFile: string, guid: string}> => {
   const { actions, language, textToSpeechOption, initialCode, ttsApiKey, ttsVoiceId, guid } = options;
   // use the guid for the file name if it was passed, otherwise generate one
   // we need to do this to prevent deadlocks when running multiple instances of the function concurrently
@@ -28,7 +28,7 @@ export const generateVideoFromActions = async (options: IGenerateVideoFromAction
   resolvedInitialCode = encodeURIComponent(resolvedInitialCode || "");
 
   // the editor.html file is copied into the dist folder of the package itself, and thus must be loaded from there for any 3rd party call
-  const directoryOfEditorHtmlFile = process.env.NODE_ENV === "development" ? 
+  const directoryOfEditorHtmlFile = process.env.EDITOR_SOURCE === "development" ? 
   `${currentWorkingDirectory}/src/monaco-localhost-single-file-editor` : 
   `${currentWorkingDirectory}/node_modules/@fullstackcraftllc/codevideo-backend-engine/dist`;
   const editorUrl = `file://${directoryOfEditorHtmlFile}/editor.html?language=${language}&initialCode=${resolvedInitialCode}`;
@@ -57,7 +57,8 @@ export const generateVideoFromActions = async (options: IGenerateVideoFromAction
     editorUrl,
     videoFile,
     actions,
-    audioDirectory
+    audioDirectory,
+    "monaco-single-editor"
   );
 
   // now that we have the offset delays for each audio, build the audio file
@@ -66,7 +67,13 @@ export const generateVideoFromActions = async (options: IGenerateVideoFromAction
   // then combine the audio and video files
   await addAudioToVideo(fileNameWithoutExtension, videoDirectory, videoFile, audioDirectory);
 
-  // finally load the video and return it as a buffer
-  return fs.promises.readFile(videoFile);
+  const videoBuffer  = await fs.promises.readFile(videoFile);
+
+  // return relevant information
+  return {
+    videoBuffer,
+    pathToFile: videoFile,
+    guid: fileNameWithoutExtension
+  }
 };
 

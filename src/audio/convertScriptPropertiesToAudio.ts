@@ -1,4 +1,5 @@
 import os from "os";
+import fs from "fs";
 import {
   IAction,
   isSpeakAction,
@@ -45,6 +46,11 @@ export const convertSpeakActionsToAudio = async (
     if (platform === "linux" && textToSpeechOption === "sayjs") {
       console.log("sayjs is not supported on linux");
       throw new Error("sayjs is not supported on linux");
+    }
+
+    // create audio folder if it doesn't exist
+    if (!fs.existsSync(audioFolderPath)) {
+      fs.mkdirSync(audioFolderPath, { recursive: true });
     }
 
     // free version with say (installed outofthebox on mac)

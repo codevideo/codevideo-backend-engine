@@ -46,6 +46,7 @@ export const findTextCoordinatesFromImage = async (
   await worker.terminate();
 
   // delete the image from the file system as cleanup
+  console.log("deleting image")
   fs.unlinkSync(imagePath);
 
   return bounds;

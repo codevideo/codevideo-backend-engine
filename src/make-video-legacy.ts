@@ -1,6 +1,6 @@
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
-import { executeAction } from "./actions/executeAction.js";
+import { executeActionForMonacoLocalhost } from "./actions/executeActionForMonacoLocalhost.js";
 import { addAudioToVideo } from "./audio/addAudioToVideo.js";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
 import { buildAudioFile } from "./audio/buildAudioFile.js";
@@ -121,11 +121,11 @@ const runPuppeteerAutomation = async (url: string) => {
           audioHash,
           `${actionsAudioDirectory}/${audioHash}.mp3`
         ),
-        executeAction(page, id, action),
+        executeActionForMonacoLocalhost(page, id, action),
       ]);
     } else if (action.name === "type-terminal") {
     } else {
-      await executeAction(page, id, action);
+      await executeActionForMonacoLocalhost(page, id, action);
     }
 
     console.log(`Step ${id} complete`);

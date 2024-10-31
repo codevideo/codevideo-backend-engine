@@ -4,7 +4,7 @@
 ![Code Quality](https://img.shields.io/badge/Code_Quality-Spaghetti-blue)
 ![Code Coverage](https://img.shields.io/badge/Code_Coverage-Minimal-blue)
 ![Tests](https://img.shields.io/badge/Tests-Dubious-blue)
-![Moral](https://img.shields.io/badge/Code_Quality-High-blue)
+![Moral](https://img.shields.io/badge/Moral-High-blue)
 ![Tool Abilities](https://img.shields.io/badge/Tool_Abilities-Insane-blue)
 
 Create shockingly realistic automated software videos!
@@ -16,14 +16,14 @@ _Any sufficiently advanced technology is indistinguishable from magic._ 😉
 Install this package:
 
 ```bash
-npm install @fullstackcraft/codevideo-backend-engine
+npm install @fullstackcraftllc/codevideo-backend-engine
 ```
 
 Use it in your project!
 
 ```typescript
 import fs from 'fs'
-import { generateVideoFromActions } from '@fullstackcraft/codevideo-backend-engine'
+import { generateVideoFromActions } from '@fullstackcraftllc/codevideo-backend-engine'
 import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
 
 const videoOptions: IGenerateVideoFromActionsOptions = {
@@ -42,11 +42,19 @@ const videoOptions: IGenerateVideoFromActionsOptions = {
 }
 
 
-// 'video' is a Buffer representing an mp4 video
-const video = generateVideoFromActions(videoOptions)
+// 'videoBuffer' is a Buffer representing the mp4 video created
+// 'pathToFile' is the path to the video file
+// 'guid' is a unique identifier for the video
+const { videoBuffer, pathToFile, guid } = generateVideoFromActions(videoOptions)
 
-// for example, save the video to a file
+// for example, save the videoBuffer to some other file
 fs.writeFileSync('hello-world.mp4', video)
+
+// do something with the created file directly
+fs.renameSync(pathToFile, 'hello-world.mp4')
+
+// use the guid for some other process - job list, etc.
+console.log(guid)
 ```
 
 ## Quick Start - CLI Usage
@@ -113,8 +121,6 @@ We have a `festival` voice available for Linux users. Keep in mind with this opt
 sudo apt-get install festival lame
 ```
 
-```bash
-
 ### Paid
 
 Currently, we support the following AI voices:
@@ -142,7 +148,7 @@ npm run start ./examples/hello-world.json openai
 npm run start ./examples/hello-world.json sayjs
 ```
 
-this is anyway the default and it doesn't need to be explicitely included.
+this is anyway the default and it doesn't need to be explicitly included.
 
 
 ## Defining Actions
