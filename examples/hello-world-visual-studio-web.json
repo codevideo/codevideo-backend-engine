@@ -1,0 +1,46 @@
+[
+  {
+    "name": "create-file",
+    "value": "index.js"
+  },
+  {
+    "name": "speak-before",
+    "value": "We've started by creating an empty file. I've called it index.js."
+  },
+  {
+    "name": "click-editor",
+    "value": "1"
+  },
+  {
+    "name": "speak-before",
+    "value": "Then, we'll add a simple console.log statement to the file."
+  },
+  {
+    "name": "type-editor",
+    "value": "console.log('Hello, world!');"
+  },
+  {
+    "name": "speak-before",
+    "value": "For example, if I wanted to write the value of some variable, I could do that with console.log."
+  },
+  {
+    "name": "backspace",
+    "value": "29"
+  },
+  {
+    "name": "type-editor",
+    "value": "const myVariable = 'Important variable I want to keep track of';"
+  },
+  {
+    "name": "enter",
+    "value": "1"
+  },
+  {
+    "name": "type-editor",
+    "value": "console.log(myVariable);"
+  },
+  {
+    "name": "speak-before",
+    "value": "And that's it! We now know how to use the console.log function in JavaScript."
+  }
+]

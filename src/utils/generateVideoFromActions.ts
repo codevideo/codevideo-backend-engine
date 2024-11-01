@@ -48,10 +48,8 @@ export const generateVideoFromActions = async (options: IGenerateVideoFromAction
   const audioFiles = await convertSpeakActionsToAudio(
     actions,
     audioDirectory,
-    false,
-    resolvedTextToSpeechOption,
-    ttsApiKey,
-    ttsVoiceId
+    false, // forceOverwrite
+    resolvedTextToSpeechOption
   );
 
   // then run the puppeteer automation, which records the video and returns the start times of each audio

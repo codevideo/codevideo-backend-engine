@@ -8,9 +8,14 @@ export const executeActionForVisualStudioCodeLocalhost = async (
   action: IAction
 ) => {
   const KEYBOARD_TYPING_PAUSE_MS = 75;
+  const LONGER_PAUSE_MS = 1000;
 
   const simulateKeyboardPause = async () => {
     await wait(KEYBOARD_TYPING_PAUSE_MS);
+  };
+
+  const simulateLongerKeyboardPause = async () => {
+    await wait(LONGER_PAUSE_MS);
   };
 
   const simulateArrowDown = async () => {
@@ -108,6 +113,20 @@ export const executeActionForVisualStudioCodeLocalhost = async (
     await simulateKeyboardPause();
   }
 
+  const createFile = async (page: Page, filename: string) => {
+    // right click within class monaco-list-rows
+    await page.click(".monaco-list-rows", { button: "right" });
+    await simulateLongerKeyboardPause();
+    // a.action-menu-item with aria-label "New File..."
+    await page.click(`span[aria-label="New File..."]`);
+    await simulateLongerKeyboardPause();
+    // type the filename
+    await simulateTyping(filename);
+    // press enter
+    await simulateEnter();
+  }
+
+
   let times = parseInt(action.value) || 1;
   console.log("times", times);
   for (let i = 0; i < times; i++) {
@@ -167,6 +186,9 @@ export const executeActionForVisualStudioCodeLocalhost = async (
         break;
       case "type-terminal":
         await simulateTyping(action.value);
+        break;
+      case "create-file":
+        await createFile(page, action.value);
         break;
       default:
         break;

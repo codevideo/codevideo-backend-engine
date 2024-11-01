@@ -9,7 +9,7 @@ import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
 dotenv.config();
 
 const makeVideo = async () => {
-  const { actions, url, videoFile, actionsAudioDirectory, textToSpeechOption } =
+  const { actions, url, videoFile, actionsAudioDirectory, textToSpeechOption, actionEnvironment } =
     await loadActions();
 
   // first convert scripts to audio
@@ -26,7 +26,7 @@ const makeVideo = async () => {
     videoFile,
     actions,
     actionsAudioDirectory,
-    'monaco-single-editor'
+    actionEnvironment
   );
 
   // now that we have the offset delays for each audio, build the audio file

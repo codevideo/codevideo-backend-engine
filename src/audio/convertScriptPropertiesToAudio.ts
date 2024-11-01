@@ -17,9 +17,7 @@ export const convertSpeakActionsToAudio = async (
   actions: Array<IAction>,
   audioFolderPath: string,
   forceOverwrite: boolean,
-  textToSpeechOption: TextToSpeechOptions,
-  ttsApiKey?: string,
-  ttsVoiceId?: string
+  textToSpeechOption: TextToSpeechOptions
 ) => {
   const audioFiles: Array<string> = [];
 
@@ -54,6 +52,7 @@ export const convertSpeakActionsToAudio = async (
     }
 
     // free version with say (installed outofthebox on mac)
+    console.log(textToSpeechOption);
     switch (textToSpeechOption) {
       case "coqui-ai":
         await saveToFileCoquiAi(
@@ -79,8 +78,8 @@ export const convertSpeakActionsToAudio = async (
           textToSpeak,
           audioFolderPath,
           forceOverwrite,
-          ttsApiKey,
-          ttsVoiceId
+          process.env.ELEVEN_LABS_API_KEY,
+          process.env.ELEVEN_LABS_VOICE_ID
         );
         break;
       case "openai":
@@ -90,8 +89,8 @@ export const convertSpeakActionsToAudio = async (
           textToSpeak,
           audioFolderPath,
           forceOverwrite,
-          ttsApiKey,
-          ttsVoiceId
+          process.env.OPENAI_API_KEY,
+          process.env.OPENAI_VOICE_ID
         );
         break;
       default:

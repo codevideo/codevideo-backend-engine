@@ -1,3 +1,4 @@
+import fs from "fs";
 import { IAction, ActionEnvironment } from "@fullstackcraftllc/codevideo-types";
 import puppeteer from "puppeteer";
 import { PuppeteerScreenRecorder } from "puppeteer-screen-recorder";
@@ -27,11 +28,10 @@ export const runPuppeteerAutomation = async (url: string, videoFile: string, act
     console.log("recording video...");
     // then run the automation
     const browser = await puppeteer.launch({
-      args: ["--disable-dev-shm-usage", "--no-sandbox"], // both flags needed for docker, see: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
+      args: ["--disable-dev-shm-usage", "--no-sandbox", "--start-maximized"], // both flags needed for docker, see: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
       // headless: "new",
       headless: false, // for debugging
       // devtools: true, // for debugging
-      // headless: "new",
       // executablePath:
       //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       defaultViewport: {
@@ -46,12 +46,50 @@ export const runPuppeteerAutomation = async (url: string, videoFile: string, act
       height: 1080,
     });
 
-    // create and start the recording
+    // // before starting the recording, wait for the page to load
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    // // dump entire html as a string
+    // const html = await page.content();
+    // //write to file
+    // fs.writeFileSync("page.html", html);
+
+    // // click once to trigger focus
+    // await page.click(".label-name");
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
+    // // click the element with monaco-button monaco-text-button and text "Yes, I trust the authors"
+    // await page.click("a.monaco-button.monaco-text-button");
+
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+
+    // await new Promise((resolve) => setTimeout(resolve, 7000));
+
+
+    // // click the element with monaco-button monaco-text-button and text "Yes, I trust the authors"
+    // await page.click("a.monaco-button.monaco-text-button");
+
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // //click the first img to set dark mode
+    // // await page.click("img");
+
+    // // await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // // click the element with action-label codicon codicon-close
+    // await page.click(".action-label.codicon.codicon-close");
+
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+
+    
+    // finally, create and start the recording
     const recorder = new PuppeteerScreenRecorder(page);
     await recorder.start(videoFile);
 
     // add a 2 second delay before starting the steps
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
+
 
     // before beginning steps, save what current time we are in execution of this program
     // needed for accurately calculating the audio start times

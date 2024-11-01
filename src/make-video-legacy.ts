@@ -1,7 +1,7 @@
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
 import dotenv from "dotenv";
-import { executeAction } from "./actions/executeAction.js";
+import { executeActionForMonacoLocalhost } from "./actions/executeActionForMonacoLocalhost.js";
 import { addAudioToVideo } from "./audio/addAudioToVideo.js";
 import { convertSpeakActionsToAudio } from "./audio/convertScriptPropertiesToAudio.js";
 import { buildAudioFile } from "./audio/buildAudioFile.js";

@@ -154,6 +154,13 @@ npm run start ./examples/hello-world.json sayjs
 
 this is anyway the default and it doesn't need to be explicitly included.
 
+## Advanced options
+
+In the single editor version, you can start with an initial code and language parameter:
+
+```bash
+npm run start ./examples/hello-world.json elevenlabs monaco-single-editor "// here's a comment at the top of the file" javascript
+
 ## Defining Actions
 
 The API works via an array of actions (type `IAction`), each represented by an object with a `name` and `value` property. These actions can be defined in a actions file. The actions file can be either a json file or a TypeScript file that contains an array of actions.
@@ -330,6 +337,11 @@ A few caveats are required to properly run desktop automation actions:
 - Need exactly one 1920x1080 monitor
 - The desktop to the right of where you issue the above script must be an empty instance of Visual Studio Code
 
+## Experimental: Visual Studio Code on the Web
+
+```bash
+npm run visual-studio-code-web-driver ./examples/hello-world-visual-studio-web.json sayjs
+```
 
 ## Patches!
 
