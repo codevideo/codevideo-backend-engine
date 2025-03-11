@@ -1,0 +1,226 @@
+[
+    {
+      "name": "author-speak-before",
+      "value": "In this quick little lesson, I'd like to show you all about a small unit test I made (which my colleagues made fun of me a little bit for) but I think is actually the perfect unit test for .NET!"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "In .NET, there's something known as the build directory props where you can set pretty long-lasting properties about your software, including things like the software copyright name and year."
+    },
+    {
+      "name": "author-speak-before",
+      "value": "I'll create a little example of the directory build props file to show what I mean."
+    },
+    {
+      "name": "file-explorer-create-file",
+      "value": "Directory.Build.props"
+    },
+    {
+      "name": "file-explorer-open-file",
+      "value": "Directory.Build.props"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "And I'll just write in some XML content into this file, including the copyright..."
+    },
+    {
+      "name": "editor-type",
+      "value": "<Project>\n\t<PropertyGroup>\n\t\t<Copyright>Copyright 2025 (c) Full Stack Craft LLC</Copyright>\n    </PropertyGroup>\n</Project>"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Of course this is a pretty short example of a directory build props file; typically you would have much more information in this file. But for the illustration of what our unit test will do, this is fine."
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Let's save this file for now..."
+    },
+    {
+      "name": "editor-save",
+      "value": "1"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Now, to the actual unit test. I'll create a new c sharp file DirectoryBuildPropsTests.cs"
+    },
+    {
+      "name": "file-explorer-create-file",
+      "value": "DirectoryBuildPropsTests.cs"
+    },
+    {
+      "name": "file-explorer-open-file",
+      "value": "DirectoryBuildPropsTests.cs"
+    },
+    {
+      "name": "editor-type",
+      "value": "public class DirectoryBuildPropsTests"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-type",
+      "value": "{"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "We'll assume we're using X Unit, so I'll write in the 'fact' decorator here."
+    },
+    {
+      "name": "editor-type",
+      "value": "    [Fact]"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "And now for the main event! What I believe is an absolutely perfect unit test: checking that the copyright year in the DirectoryBuildProps is equal to the current year!"
+    },
+    {
+      "name": "editor-type",
+      "value": "    public void CopyrightYear_ShouldBeCurrentYear()"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-type",
+      "value": "    {"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-type",
+      "value": "        // Arrange"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "For arranging, we'll just read the directory props file, and store a var for the actual current year."
+    },
+    {
+      "name": "editor-type",
+      "value": "        var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, \"Directory.Build.props\");\n        var fileContent = File.ReadAllText(filePath);\n        var currentYear = DateTime.Now.Year.ToString();"
+    },
+    {
+      "name": "editor-enter",
+      "value": "2"
+    },
+    {
+      "name": "editor-type",
+      "value": "        // Act"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "And we'll get the year stored in the file via regex."
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-type",
+      "value": "        var match = Regex.Match(fileContent, @\"<Copyright>.*?(\\d{4}).*?</Copyright>\");"
+    },
+    {
+      "name": "editor-enter",
+      "value": "2"
+    },
+    {
+      "name": "editor-type",
+      "value": "        // Assert"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "If we don't even get a match, we'll log out a clear message - that the copyright tag couldn't be found."
+    },
+    {
+      "name": "editor-type",
+      "value": "        Assert.True(match.Success, \"Copyright tag not found\");"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "And the final very important check - what we're all here for - to confirm that the actual current year matches the year in our build props!"
+    },
+    {
+      "name": "editor-type",
+      "value": "        Assert.Equal(currentYear, match.Groups[1].Value);"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-type",
+      "value": "    }"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-type",
+      "value": "}"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Let's add all the imports we need now."
+    },
+    {
+      "name": "editor-arrow-left",
+      "value": "1"
+    },
+    {
+      "name": "editor-arrow-up",
+      "value": "18"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-enter",
+      "value": "1"
+    },
+    {
+      "name": "editor-arrow-up",
+      "value": "2"
+    },
+    {
+      "name": "editor-type",
+      "value": "using System;\nusing System.IO;\nusing System.Text.RegularExpressions;\nusing XUnit;"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Wonderful! I love this as a unit test because, by definition, it's something that only needs to be updated once per year, and therefore it's definitely something everyone will forget to do!"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "So, if this unit test runs in a CI / CD pipeline (and your unit tests always should!), then whoever is lucky enough to be the first to kick off the first pipeline of the year will see they forgot to update the copyright! It's just perfect!"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "So, that's it! I hope you enjoyed this quick lesson about one of my most favorite unit tests that I've ever written!"
+    }
+  ]

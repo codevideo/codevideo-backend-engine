@@ -21,23 +21,27 @@ const killAsync = (childProcess: any, signal?: any) => {
 };
 
 
-const startVisualStudioCodeWeb = async (): Promise<{process: any, token: string} | null> => {
+const startVisualStudioCodeWeb = async (): Promise<{ process: any } | null> => {
   try {
     console.log("Starting Visual Studio Code for Web...");
     // start visual studio code for web in a background process with a custom user data directory
     const webProcess = spawn("code", [
-      "serve-web", 
-      "--user-data-dir=\"/Users/chris/Library/Application Support/Code/User\"",
+      "serve-web",
+      "--user-data-dir=/Users/chris/enterprise/codevideo/codevideo-backend-engine/src/visual-studio-code-for-web-workspace/data",
+      "--extensions-dir=/Users/chris/enterprise/codevideo/codevideo-backend-engine/src/visual-studio-code-for-web-workspace/ext",
+      "--server-data-dir=/Users/chris/enterprise/codevideo/codevideo-backend-engine/src/visual-studio-code-for-web-workspace/server",
+      "--accept-server-license-terms",
+      "--without-connection-token",
+      "--port=8000"
     ]);
 
-    // Get token from stdout
     return new Promise((resolve, reject) => {
       webProcess.stdout.on('data', (data) => {
         const output = data.toString();
+        // The web UI is available
         if (output.includes('Web UI available at')) {
           resolve({
             process: webProcess,
-            token: output.split("Web UI available at ")[1].trim()
           });
         }
       });
@@ -59,13 +63,10 @@ const startVisualStudioCodeWeb = async (): Promise<{process: any, token: string}
 }
 
 const makeVideo = async () => {
-  const currentWorkingDir = process.cwd();
-  // the default workspace is in the src/visual-studio-code-for-web directory
-  const workspaceDirectory = `${currentWorkingDir}/src/visual-studio-code-for-web-workspace`;
-  try {
-    const { actions, videoFile, actionsAudioDirectory, textToSpeechOption } =
-      await loadActions();
+  const { actions, videoFile, actionsAudioDirectory, workspaceDirectory, textToSpeechOption } =
+    await loadActions();
 
+  try {
     // first convert scripts to audio
     const audioFiles = await convertSpeakActionsToAudio(
       actions,
@@ -74,12 +75,19 @@ const makeVideo = async () => {
       textToSpeechOption
     );
 
-    const webProcess = await startVisualStudioCodeWeb();
-    if (!webProcess) {
-      throw new Error("Failed to start Visual Studio Code for Web");
-    }
+    // const webProcess = await startVisualStudioCodeWeb();
+    // if (!webProcess) {
+    //   throw new Error("Failed to start Visual Studio Code for Web");
+    // }
 
-    const url = `${webProcess.token}&folder=${workspaceDirectory}`;
+    const url = `http://127.0.0.1:8000/?folder=${workspaceDirectory}`;
+
+    // log all parameters for runpuppeteerautomation
+    console.log("Running puppeteer automation with the following parameters:");
+    console.log("url: ", url);
+    console.log("videoFile: ", videoFile);
+    console.log("actions: ", actions);
+    console.log("actionsAudioDirectory: ", actionsAudioDirectory);
 
     // then run the puppeteer automation, which records the video and returns the start times of each audio
     const audioStartTimes = await runPuppeteerAutomation(
@@ -90,6 +98,11 @@ const makeVideo = async () => {
       'visual-studio-code-web'
     );
 
+    // technically not true, could have videos with no speech actions
+    if (audioStartTimes.length === 0) {
+      throw new Error("Failed to run Puppeteer automation");
+    }
+
     // now that we have the offset delays for each audio, build the audio file
     await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
 
@@ -99,9 +112,9 @@ const makeVideo = async () => {
     await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
 
     // kill the web process
-    await killAsync(process, "SIGINT");
+    // await killAsync(webProcess.process, "SIGINT");
   } catch (error) {
-    console.error("Error killing Visual Studio Code for Web", error);
+    console.error("Error Driving Visual Studio Code for Web", error);
   } finally {
     // cleanup: remove any files inside the workspace directory, but not the directory itself
     fs.rmSync(`${workspaceDirectory}/*`, { recursive: true, force: true });

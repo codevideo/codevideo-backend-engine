@@ -1,0 +1,90 @@
+[
+    {
+        "name": "author-speak-before",
+        "value": "Let's create a super useful generic sort function in typescript!"
+    },
+    {
+        "name": "click-terminal",
+        "value": "1"
+    },
+    {
+        "name": "author-speak-before",
+        "value": "First we'll make our generic-sort.ts file."
+    },
+    {
+        "name": "terminal-type",
+        "value": "touch generic-sort.ts"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "author-speak-before",
+        "value": "And open that right up..."
+    },
+    {
+        "name": "click-filename",
+        "value": "generic-sort.ts"
+    },
+    {
+        "name": "click-editor",
+        "value": "1"
+    },
+    {
+        "name": "author-speak-before",
+        "value": "Now, a sort function typically accepts an array and a comparison function. Let's write that out."
+    },
+    {
+        "name": "editor-type",
+        "value": "const sort<T>(arr: T[], compare: (a: T, b: T) => number): T[] => {\n    return arr.sort(compare);\n}"
+    },
+    {
+        "name": "save-editor",
+        "value": "1"
+    },
+    {
+        "name": "author-speak-before",
+        "value": "And that's it! Let's test it out."
+    },
+    {
+        "name": "terminal-type",
+        "value": "touch test.ts"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "click-filename",
+        "value": "test.ts"
+    },
+    {
+        "name": "click-editor",
+        "value": "1"
+    },
+    {
+        "name": "editor-type",
+        "value": "import { sort } from './generic-sort';\n\nconst arr = [3, 1, 2];\nconst sorted = sort(arr, (a, b) => a - b);\nconsole.log(sorted);"
+    },
+    {
+        "name": "save-editor",
+        "value": "1"
+    },
+    {
+        "name": "terminal-type",
+        "value": "tsc test.ts"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    },
+    {
+        "name": "terminal-type",
+        "value": "node test.js"
+    },
+    {
+        "name": "enter",
+        "value": "1"
+    }
+]

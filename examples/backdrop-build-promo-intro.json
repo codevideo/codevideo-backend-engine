@@ -1,10 +1,10 @@
 [
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Greetings to everyone coming from Backdrop Build or the internet at large! Today, I'm going to share CodeVideo, the product I've been hacking away at for the past 4 weeks for Backdrop Build."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": ":) :) :)"
   },
   {
@@ -12,19 +12,19 @@
     "value": "1"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "The world can always use more smileys, right?"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Anyway, all you have to do to try out our product is head over to codevideo.io slash A-I:"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "https://codevideo.io/ai"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "And one thing before you go - believe it or not, this isn't Chris speaking at all! This is our CLI tool, codevideo A-I running before your eyes! We've really reached the uncanny valley, haven't we?"
   }
 ]

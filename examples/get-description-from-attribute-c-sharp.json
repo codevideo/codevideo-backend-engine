@@ -1,14 +1,14 @@
 [
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "In this lesson, we will create an extension method in C# which gets a human-readable description from an Enum value."
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "We will start by creating a new static class called `EnumExtensions`."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "public static class EnumExtensions\n{\n\n}"
   },
   {
@@ -16,19 +16,19 @@
     "value": "1"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Now let's define the signature of the method."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "    public static string GetDescriptionFromAttribute(this Enum value)\n    {\n\n    }"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "This is an extension method because the 'this' keyword with `Enum` is used in the parameter. This means our method extends the Enum type."
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Now, let's get the field info of the Enum member."
   },
   {
@@ -36,7 +36,7 @@
     "value": "1"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "        var fieldInfo = value.GetType().GetField(value.ToString());"
   },
   {
@@ -44,11 +44,11 @@
     "value": "1"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "We use reflection to get the FieldInfo of this enum type. Now let's process the edge-case where the value is null."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "        if (fieldInfo == null) return value.ToString();"
   },
   {
@@ -56,15 +56,15 @@
     "value": "1"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "If the FieldInfo is null, we return the original string representation of the enum value."
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Up next, we acquire the custom attributes associated with our Enum value."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "        var attributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);"
   },
   {
@@ -72,15 +72,15 @@
     "value": "1"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Now, we check to see if there is at least one DescriptionAttribute. If there is, we return the description from the first attribute, otherwise we will return the original value."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "        return attributes.Any() ? attributes[0].Description : value.ToString();"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Since we're using System, the component model, and LINQ, we need to add a using statement for each of them."
   },
   {
@@ -92,11 +92,11 @@
     "value": "40"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "using System;\nusing System.ComponentModel;\nusing System.Linq;\n\n"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "And that's it! We've created an extension method that will retrieve a description from an Enum's attributes."
   }
 ]

@@ -1,14 +1,14 @@
 [
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "To showcase how this tool works, we'll do a simple hello world example."
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "console.log('Hello World!');"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Nice, that looks pretty good! Pretty cool tool, right?!"
   }
 ]

@@ -5,41 +5,41 @@ import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
 const main = async () => {
   const actions: Array<IAction> = [
     {
-      name: "speak-before",
+      name: "author-speak-before",
       value: "I'm going to type a comment of 'Hello, world!' in the editor.",
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "// Hello, world!\n",
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "// Hello, world!\n",
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "// Hello, world!\n",
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "// Hello, world!\n",
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "// Hello, world!\n",
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "// Hello, world!\n",
     },
     {
-      name: "speak-before",
+      name: "author-speak-before",
       value: "Yeah, I'm pretty much awesome.",
     },
   ];
 
-  const {videoBuffer} = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
-  fs.writeFileSync("visual-studio-driver.mp4", videoBuffer);
+  const { videoBuffer } = await generateVideoFromActions({actions, language: 'javascript', textToSpeechOption: "coqui-ai"});
+  fs.writeFileSync("visual-studio-driver.mp4", new Uint8Array(videoBuffer));
 };
 
 main();

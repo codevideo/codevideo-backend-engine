@@ -7,35 +7,35 @@ const main = async () => {
   const videoOptions: IGenerateVideoFromActionsOptions = {
     actions: [
       {
-        name: "speak-before",
+        name: "author-speak-before",
         value: "I'm going to type a comment of 'Hello, world!' in the editor.",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "# Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "# Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "# Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "# Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "# Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "def my_awesome_python_function():\n\t# some code here...",
       },
       {
-        name: "speak-before",
+        name: "author-speak-before",
         value: "Yeah, I'm pretty much awesome.",
       },
     ],

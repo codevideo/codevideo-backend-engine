@@ -1,6 +1,6 @@
 {
   "name": "@fullstackcraftllc/codevideo-backend-engine",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Create shockingly realistic automated software videos! The backend / CLI tool from CodeVideo to create videos.",
   "type": "module",
   "main": "dist/index.js",
@@ -23,10 +23,12 @@
     "code-health-check": "tsc && node ./dist/scripts/code-health-check.js",
     "visual-studio-code-driver": "tsc && node ./dist/visual-studio-code-driver.js",
     "visual-studio-code-web-driver": "tsc && node ./dist/visual-studio-code-web-driver.js",
+    "visual-studio-code-electron-driver": "tsc && node ./dist/visual-studio-code-electron-driver.js",
     "test-generate-video-function": "tsc && export EDITOR_SOURCE=development && node ./dist/test-generate-video-function.js",
     "test-generate-video-function-concurrency": "tsc && export EDITOR_SOURCE=development && node ./dist/test-generate-video-function-concurrency.js",
     "test-generate-video-function-initial-code-elevenlabs": "tsc && export EDITOR_SOURCE=development && node ./dist/test-generate-video-function-initial-code-elevenlabs.js",
-    "test-generate-video-function-language-openai": "tsc && export EDITOR_SOURCE=development && node ./dist/test-generate-video-function-language-openai.js"
+    "test-generate-video-function-language-openai": "tsc && export EDITOR_SOURCE=development && node ./dist/test-generate-video-function-language-openai.js",
+    "generate-audio-manifest": "tsc && node ./dist/scripts/generate-audio-manifest.js"
   },
   "keywords": [
     "codevideo",
@@ -41,10 +43,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@fullstackcraftllc/codevideo-types": "^1.3.0",
-    "@fullstackcraftllc/syntax-spy": "^1.0.4",
-    "@fullstackcraftllc/virtual-code-block": "^1.3.4",
-    "@nut-tree/monorepo": "file:sources/nut.js-4.2.0.tar.gz",
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@fullstackcraftllc/codevideo-types": "^2.0.35",
     "dotenv": "^16.4.5",
     "isomorphic-fetch": "^3.0.0",
     "jimp": "^0.22.10",
@@ -80,6 +80,6 @@
     "rollup-plugin-typescript2": "^0.36.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.8.2"
   }
 }

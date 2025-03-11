@@ -1,10 +1,10 @@
 [
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Today, we're going to learn about how to use the console.log function in JavaScript."
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "I've already got a hello-world.js file prepared here - let's open it up."
     },
     {
@@ -16,11 +16,11 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now, to log things to your console, simply make a call to the console.log function, passing in the text you want to log."
     },
     {
-        "name": "type-editor",
+        "name": "editor-type",
         "value": "console.log('Hello, world!');"
     },
     {
@@ -28,7 +28,7 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now we'll open up a terminal and run this file."
     },
     {
@@ -40,7 +40,7 @@
         "value": "1"
     },
     {
-        "name": "type-terminal",
+        "name": "terminal-type",
         "value": "node hello-world.js"
     },
     {
@@ -52,11 +52,11 @@
         "value": "2000"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "And of course we get the expected output - 'hello world!' printed to the console."
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "And that's about it! You now know how to log things to your console in JavaScript!"
     }
 ]

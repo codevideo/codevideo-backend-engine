@@ -9,7 +9,7 @@ import { runPuppeteerAutomation } from "./puppeteer/runPuppeteerAutomation.js";
 dotenv.config();
 
 const makeVideo = async () => {
-  const { actions, url, videoFile, actionsAudioDirectory, textToSpeechOption, actionEnvironment } =
+  const { actions, url, videoDirectory, videoFile, actionsAudioDirectory, textToSpeechOption, actionEnvironment } =
     await loadActions();
 
   // first convert scripts to audio
@@ -33,8 +33,6 @@ const makeVideo = async () => {
   await buildAudioFile(actionsAudioDirectory, audioFiles, audioStartTimes);
 
   // then combine the audio and video files
-  // TODO: quick fix for videoDirectory is the videoFile without the file name
-  const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
   await addAudioToVideo("", videoDirectory, videoFile, actionsAudioDirectory);
 };
 

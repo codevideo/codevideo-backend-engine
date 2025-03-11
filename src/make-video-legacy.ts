@@ -110,14 +110,14 @@ const runPuppeteerAutomation = async (url: string) => {
     const audioHash = sha256Hash(action.value);
 
     // special case is audio playback
-    if (action.name === "speak-before") {
+    if (action.name === "author-speak-before") {
       await playAudioInPuppeteer(
         page,
         audioHash,
         `${actionsAudioDirectory}/${audioHash}.mp3`
       );
       continue;
-    } else if (action.name === "speak-during") {
+    } else if (action.name === "author-speak-during") {
       // use promise.all to play audio and execute action at the same time
       await Promise.all([
         playAudioInPuppeteer(
@@ -127,7 +127,7 @@ const runPuppeteerAutomation = async (url: string) => {
         ),
         executeActionForMonacoLocalhost(page, id, action),
       ]);
-    } else if (action.name === "type-terminal") {
+    } else if (action.name === "terminal-type") {
     } else {
       await executeActionForMonacoLocalhost(page, id, action);
     }

@@ -119,14 +119,14 @@ export class VideoGenerator {
       const audioHash = sha256Hash(action.value);
 
       // special case is audio playback
-      if (action.name === "speak-before") {
+      if (action.name === "author-speak-before") {
         await this.playAudioInPuppeteer(
           page,
           audioHash,
           `${this.actionsAudioDirectory}/${audioHash}.mp3`
         );
         continue;
-      } else if (action.name === "speak-during") {
+      } else if (action.name === "author-speak-during") {
         // use promise.all to play audio and execute action at the same time
         await Promise.all([
           this.playAudioInPuppeteer(
@@ -136,7 +136,7 @@ export class VideoGenerator {
           ),
           executeActionForMonacoLocalhost(page, id, action),
         ]);
-      } else if (action.name === "type-terminal") {
+      } else if (action.name === "terminal-type") {
       } else {
         await executeActionForMonacoLocalhost(page, id, action);
       }

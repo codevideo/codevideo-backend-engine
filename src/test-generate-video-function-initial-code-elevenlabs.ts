@@ -6,35 +6,35 @@ const main = async () => {
     initialCode: "// here's a comment at the top of the file\n\n// and another two lines later\n\n// and another\n",
     actions: [
       {
-        name: "speak-before",
+        name: "author-speak-before",
         value: "I'm going to type a comment of 'Hello, world!' in the editor.",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "// Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "// Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "// Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "// Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "// Hello, world!\n",
       },
       {
-        name: "type-editor",
+        name: "editor-type",
         value: "// Hello, world!\n",
       },
       {
-        name: "speak-before",
+        name: "author-speak-before",
         value: "Yeah, I'm pretty much awesome.",
       },
     ],

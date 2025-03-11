@@ -51,7 +51,7 @@ export const saveToFileOpenAI = async (
     const filePath = `${audioFolderPath}/${filename}.mp3`;
 
     // write the file with fs
-    fs.writeFileSync(filePath, Buffer.from(buffer));
+    fs.writeFileSync(filePath, new Uint8Array(buffer));
 
     console.log(`Script for step ${filename} converted to audio with Open AI.`);
   } catch (error) {

@@ -1,0 +1,38 @@
+[
+    {
+      "name": "author-speak-before",
+      "value": "Right now, we're just looking at a blank editor. We don't even have a file open yet! Let's begin by creating a TypeScript file for this 'areEqual' function."
+    },
+    {
+      "name": "file-explorer-create-file",
+      "value": "areEqual.ts"
+    },
+    {
+      "name": "file-explorer-open-file",
+      "value": "areEqual.ts"
+    },
+    {
+      "name": "editor-type",
+      "value": "// areEqual.ts"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Let's first write a JS doc comment for our function:"
+    },
+    {
+      "name": "editor-type",
+      "value": "/**\n* Compares two numbers for strict equality.\n*\n* @param a - The first number to compare\n* @param b - The second number to compare\n* @returns True if the numbers are strictly equal, false otherwise\n*/"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "Now let's implement the actual function:"
+    },
+    {
+      "name": "editor-type",
+      "value": "export const areEqual = (a: number, b: number): boolean => {\nreturn a === b;\n}"
+    },
+    {
+      "name": "author-speak-before",
+      "value": "That should be all we need to do for this 'areEqual' function. I hope you enjoyed the lesson!!!"
+    }
+  ]

@@ -2,7 +2,7 @@ import os from "os";
 import fs from "fs";
 import {
   IAction,
-  isSpeakAction,
+  isAuthorAction,
   TextToSpeechOptions,
 } from "@fullstackcraftllc/codevideo-types";
 import { saveToFileSay } from "../say/saveToFileSay.js";
@@ -22,14 +22,14 @@ export const convertSpeakActionsToAudio = async (
   const audioFiles: Array<string> = [];
 
   // get all speak actions
-  const speakActions = actions.filter(isSpeakAction);
+  const speakActions = actions.filter(isAuthorAction);
 
   console.log(
     `Of the ${actions.length} actions, ${speakActions.length} are speak actions.`
   );
 
   for (let i = 0; i < speakActions.length; i++) {
-    if (!isSpeakAction(speakActions[i])) {
+    if (!isAuthorAction(speakActions[i])) {
       continue;
     }
     // id of the audio file is the sha-256 hash of the text

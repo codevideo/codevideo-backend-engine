@@ -44,11 +44,11 @@ describe("generateVideoFromActions", () => {
     const videoOptions: IGenerateVideoFromActionsOptions = {
       actions: [
         {
-          name: "speak-before",
+          name: "author-speak-before",
           value: "I'm going to type some code now.",
         },
         {
-          name: "type-editor",
+          name: "editor-type",
           value: "console.log('Hello, world!');",
         },
       ],
@@ -65,11 +65,11 @@ describe("generateVideoFromActions", () => {
     const videoOptions: IGenerateVideoFromActionsOptions = {
       actions: [
         {
-          name: "speak-before",
+          name: "author-speak-before",
           value: "I'm going to type some code now.",
         },
         {
-          name: "type-editor",
+          name: "editor-type",
           value: "console.log('Hello, world!');",
         },
       ],

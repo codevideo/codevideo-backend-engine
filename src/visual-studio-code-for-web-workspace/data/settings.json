@@ -1,0 +1,31 @@
+{
+    "workbench.startupEditor": "none",
+    "workbench.colorTheme": "Dark+",
+    "editor.fontSize": 16,
+    "terminal.integrated.fontSize": 16,
+    "files.autoSave": "afterDelay",
+    "workbench.tree.indent": 16,
+    "editor.minimap.enabled": false,
+    "terminal.integrated.open": true,
+    "terminal.integrated.defaultLocation": "bottom",
+    "workbench.panel.defaultLocation": "bottom",
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.osx": {
+        "zsh": {
+            "path": "/bin/zsh"
+        }
+    },
+    "terminal.integrated.profiles.linux": {
+        "bash": {
+            "path": "/bin/bash"
+        }
+    },
+    "security.workspace.trust.enabled": false,
+    "security.workspace.trust.startupPrompt": "never",
+    "security.workspace.trust.emptyWindow": true,
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
+    "git.showIncomingOutgoing": false
+}

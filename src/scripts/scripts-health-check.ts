@@ -1,4 +1,4 @@
-import { IAction, isSpeakAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
+import { IAction, isAuthorAction, TextToSpeechOptions } from "@fullstackcraftllc/codevideo-types";
 import { preprocessStringForComparison } from "../utils/preprocessStringForComparison.js";
 import { loadActions } from "../io/loadActions.js";
 import { speechToText } from "../openai/speechToText.js";
@@ -18,13 +18,13 @@ const scriptsHealthCheck = async () => {
     const textHash = sha256Hash(actions[i].value);
     const action = actions[i];
 
-    if (isSpeakAction(action)) {
+    if (isAuthorAction(action)) {
       await checkForArtifacts(textHash, action, actionsAudioDirectory, textToSpeechOption);
     }
   }
 };
 
-const checkForArtifacts = async (
+export const checkForArtifacts = async (
   textHash: string,
   action: IAction,
   stepsAudioPath: string,
@@ -52,7 +52,7 @@ const checkForArtifacts = async (
     );
     // and regenerate the audio for this step
     console.log(`Regenerating audio for step ${textHash}...`);
-    if (isSpeakAction(action)) {
+    if (isAuthorAction(action)) {
       await convertSpeakActionsToAudio([action], stepsAudioPath, true, textToSpeechOption);
     }
   } else {

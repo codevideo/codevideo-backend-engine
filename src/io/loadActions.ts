@@ -5,10 +5,12 @@ import { IAction, TextToSpeechOptions, ActionEnvironment } from "@fullstackcraft
 export const loadActions = async (): Promise<{
   url: string;
   actions: Array<IAction>;
+  videoDirectory: string;
   videoFile: string;
   currentWorkingDirectory: string;
   actionsAudioDirectory: string;
   actionsVideoDirectory: string;
+  workspaceDirectory: string;
   textToSpeechOption: TextToSpeechOptions;
   actionEnvironment: ActionEnvironment;
 }> => {
@@ -97,6 +99,8 @@ export const loadActions = async (): Promise<{
   );
   const actionsAudioDirectory = `${currentWorkingDirectory}/audio/${fileNameWithoutExtension}`;
   const actionsVideoDirectory = `${currentWorkingDirectory}/video/${fileNameWithoutExtension}`;
+  // used for the visual studio for web driver, which requires a workspace directory
+  const workspaceDirectory = `${currentWorkingDirectory}/workspaces/${fileNameWithoutExtension}`;
   console.log("PROCESS ENV IS" + process.env.NODE_ENV);
   const directoryOfEditorHtmlFile = process.env.NODE_ENV === "development" ? 
   `${currentWorkingDirectory}/src/monaco-localhost-single-file-editor` : 
@@ -113,13 +117,17 @@ export const loadActions = async (): Promise<{
 
   const videoFile = `./video/${fileNameWithoutExtension}.mp4`;
 
+  const videoDirectory = videoFile.replace(/\/[^/]+$/, "");
+
   return {
     url,
     actions,
     currentWorkingDirectory,
+    videoDirectory,
     videoFile,
     actionsAudioDirectory,
     actionsVideoDirectory,
+    workspaceDirectory,
     textToSpeechOption,
     actionEnvironment
   };

@@ -113,13 +113,13 @@ export const executeActionForMonacoLocalhost = async (
       for (let i = 0; i < times; i++) {
         // actual logic
         switch (action.name) {
-          // case "speak-before":
+          // case "author-speak-before":
           //   await playAudioInPuppeteer(
           //     id,
           //     `./audio/${action.value}.mp3`
           //   );
           //   break;
-          case "arrow-down":
+          case "editor-arrow-down":
             pos = editor.getPosition();
             // @ts-ignore
             pos.lineNumber = pos.lineNumber + 1;
@@ -127,7 +127,7 @@ export const executeActionForMonacoLocalhost = async (
             editor.setPosition(pos);
             await simulateKeyboardPause();
             break;
-          case "arrow-up":
+          case "editor-arrow-up":
             pos = editor.getPosition();
             // @ts-ignore
             pos.lineNumber = pos.lineNumber - 1;
@@ -135,7 +135,7 @@ export const executeActionForMonacoLocalhost = async (
             editor.setPosition(pos);
             await simulateKeyboardPause();
             break;
-          case "tab":
+          case "editor-tab":
             pos = editor.getPosition();
             // @ts-ignore
             pos.lineNumber = pos.lineNumber + 2;
@@ -143,7 +143,7 @@ export const executeActionForMonacoLocalhost = async (
             editor.setPosition(pos);
             await simulateKeyboardPause();
             break;
-          case "arrow-left":
+          case "editor-arrow-left":
             pos = editor.getPosition();
             // @ts-ignore
             pos.column = pos.column - 1;
@@ -151,7 +151,7 @@ export const executeActionForMonacoLocalhost = async (
             editor.setPosition(pos);
             await simulateKeyboardPause();
             break;
-          case "arrow-right":
+          case "editor-arrow-right":
             pos = editor.getPosition();
             // @ts-ignore
             pos.column = pos.column + 1;
@@ -159,10 +159,10 @@ export const executeActionForMonacoLocalhost = async (
             editor.setPosition(pos);
             await simulateKeyboardPause();
             break;
-          case "enter":
+          case "editor-enter":
             await simulateHumanTyping(editor, "\n");
             break;
-          case "delete-line":
+          case "editor-delete-line":
             console.log("deleting line");
             // @ts-ignore
             let line = editor.getPosition().lineNumber;
@@ -172,7 +172,7 @@ export const executeActionForMonacoLocalhost = async (
             ]);
             await simulateKeyboardPause();
             break;
-          case "command-right":
+          case "editor-command-right":
             // simulate moving to the end of the current line
             // @ts-ignore
             pos = editor.getPosition();
@@ -183,17 +183,17 @@ export const executeActionForMonacoLocalhost = async (
             break;
           default:
             break;
-          case "highlight-code":
+          case "editor-highlight-code":
             highlightText(editor, action.value);
-          case "space":
+          case "editor-space":
             await simulateHumanTyping(editor, " ");
             break;
-          case "backspace":
+          case "editor-backspace":
             // @ts-ignore
             editor.trigger(monaco.KeyCode.Backspace, "deleteLeft");
             await simulateKeyboardPause();
             break;
-          case "type-editor":
+          case "editor-type":
             await simulateHumanTyping(editor, action.value);
             break;
         }

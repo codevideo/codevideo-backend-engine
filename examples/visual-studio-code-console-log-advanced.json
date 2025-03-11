@@ -1,10 +1,10 @@
 [
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Today, we're going to learn about how to use the console.log function in JavaScript."
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "I've already got a hello-world.js file prepared here - let's open it up."
     },
     {
@@ -16,11 +16,11 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now, to log things to your console, simply make a call to the console.log function, passing in the text you want to log."
     },
     {
-        "name": "type-editor",
+        "name": "editor-type",
         "value": "console.log('Hello, world!');"
     },
     {
@@ -28,7 +28,7 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now we'll open up a terminal and run this file."
     },
     {
@@ -40,7 +40,7 @@
         "value": "1"
     },
     {
-        "name": "type-terminal",
+        "name": "terminal-type",
         "value": "node hello-world.js"
     },
     {
@@ -52,15 +52,15 @@
         "value": "2000"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "And of course we get the expected output - 'hello world!' printed to the console."
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "but this is a bit of a boring example, let's create a way overengineered solution. Let's move our logging to a function."
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "First, we'll make a folder called 'utils' and a file called 'logger.js' inside it."
     },
     {
@@ -80,11 +80,11 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now, let's create a function in this file that will log a message to the console."
     },
     {
-        "name": "type-editor",
+        "name": "editor-type",
         "value": "function log(message) {\n    console.log(message);\n}"
     },
     {
@@ -92,7 +92,7 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now, let's import this function into our hello-world.js file and use it to log our message."
     },
     {
@@ -104,7 +104,7 @@
         "value": "1"
     },
     {
-        "name": "type-editor",
+        "name": "editor-type",
         "value": "const log = require('./utils/logger');\n\nlog('Hello, world!');"
     },
     {
@@ -112,7 +112,7 @@
         "value": "1"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "Now we'll run this file again."
     },
     {
@@ -120,7 +120,7 @@
         "value": "1"
     },
     {
-        "name": "type-terminal",
+        "name": "terminal-type",
         "value": "node hello-world.js"
     },
     {
@@ -132,11 +132,11 @@
         "value": "2000"
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "And we get the same output as before. We could go on and add complexity to our logger function, but we'll save that for a later lesson."
     },
     {
-        "name": "speak-before",
+        "name": "author-speak-before",
         "value": "This is a simple example, but it shows how you can use the console.log function to log things to your console in JavaScript."
     }
 ]

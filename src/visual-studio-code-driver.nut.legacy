@@ -1,6 +1,5 @@
 import {
   Button,
-  centerOf,
   Key,
   keyboard,
   mouse,
@@ -8,7 +7,7 @@ import {
   screen,
   singleWord,
   straightTo,
-} from "@nut-tree/nut-js";
+} from "nut.js";
 import { findFileWithCharacters } from "./utils/findFileWIthCharacters.js";
 import { findTextCoordinatesFromImage } from "./utils/findTextCoordinatesFromImage.js";
 import { speakAsClonedVoice } from "./utils/speakAsClonedVoice.js";
@@ -301,10 +300,10 @@ export const executeActionsWithVisualStudioCodeDesktop = async (
       )}`
     );
     switch (action.name) {
-      case "speak-before":
+      case "author-speak-before":
         await speakAsClonedVoice(action.value, actionsAudioDirectory);
         break;
-      case "type-editor":
+      case "editor-type":
         await keyboard.type(action.value);
         break;
       case "click-editor":
@@ -320,7 +319,7 @@ export const executeActionsWithVisualStudioCodeDesktop = async (
         await wait(1000);
         await mouse.click(Button.LEFT);
         break;
-      case "type-terminal":
+      case "terminal-type":
         await keyboard.type(action.value);
         break;
       case "click-filename":

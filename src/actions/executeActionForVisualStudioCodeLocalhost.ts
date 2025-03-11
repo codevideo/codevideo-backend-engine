@@ -131,63 +131,63 @@ export const executeActionForVisualStudioCodeLocalhost = async (
   console.log("times", times);
   for (let i = 0; i < times; i++) {
     switch (action.name) {
-      case "arrow-down":
+      case "editor-arrow-down":
         await simulateArrowDown();
         break;
-      case "arrow-up":
+      case "editor-arrow-up":
         await simulateArrowUp();
         break;
-      case "tab":
+      case "editor-tab":
         await simulateTab();
         break;
-      case "arrow-left":
+      case "editor-arrow-left":
         await simulateArrowLeft();
         break;
-      case "arrow-right":
+      case "editor-arrow-right":
         await simulateArrowRight();
         break;
-      case "enter":
+      case "editor-enter":
         await simulateEnter();
         break;
-      case "delete-line":
+      case "editor-delete-line":
         console.log("deleting line");
         // Implement deleting line logic based on your specific use case
         break;
-      case "command-right":
+      case "editor-command-right":
         // Simulate moving to the end of the current line
         await page.keyboard.down("Control");
         await page.keyboard.press("ArrowRight");
         await page.keyboard.up("Control");
         await simulateKeyboardPause();
         break;
-      case "highlight-code":
+      case "editor-highlight-code":
         await simulateHighlightText(action.value);
         break;
-      case "space":
+      case "editor-space":
         await simulateSpace();
         break;
-      case "backspace":
+      case "editor-backspace":
         await simulateBackspace();
         break;
-      case "type-editor":
+      case "editor-type":
         await simulateTyping(action.value);
         break;
-      case "click-filename":
+      case "mouse-click-filename":
         await clickFilename(page, action.value);
         break;
-      case "click-editor":
+      case "mouse-click-editor":
         await clickEditor(page);
         break;
-      case "open-terminal":
+      case "terminal-open":
         await openTerminal(page);
         break;
-        case "click-terminal":
+      case "mouse-click-terminal":
         await clickTerminal(page);
         break;
-      case "type-terminal":
+      case "terminal-type":
         await simulateTyping(action.value);
         break;
-      case "create-file":
+      case "file-explorer-create-file":
         await createFile(page, action.value);
         break;
       default:

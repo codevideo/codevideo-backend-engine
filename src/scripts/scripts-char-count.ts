@@ -1,11 +1,11 @@
-import { convertActionsToSpeakActions } from "@fullstackcraftllc/codevideo-types";
+import { filterAuthorActions } from "@fullstackcraftllc/codevideo-types";
 import { loadActions } from "../io/loadActions.js";
 
 const scriptChartCount = async () => {
   // load in the steps.json file
   const { actions } = await loadActions();
 
-  const speakActions = convertActionsToSpeakActions(actions);
+  const speakActions = filterAuthorActions(actions);
 
   // use reduce to count the characters in the'value' property of each speak action
   const characterCount = speakActions.map(a => a.value).reduce((a, b) => a + b.length, 0);

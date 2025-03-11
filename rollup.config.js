@@ -3,6 +3,23 @@ import dts from "rollup-plugin-dts";
 import del from "rollup-plugin-delete";
 import copy from 'rollup-plugin-copy';
 
+const external = [
+  "fs",
+  "os",
+  "path",
+  "child_process",
+  "fs/promises",
+  "util",
+  "say",
+  "isomorphic-fetch",
+  "crypto",
+  "uuid",
+  "puppeteer",
+  "puppeteer-screen-recorder",
+  "@fullstackcraftllc/codevideo-types",
+  "node-fetch",
+]
+
 export default [
   // standard package
   {
@@ -21,21 +38,7 @@ export default [
         ]
       })
     ],
-    external: [
-      "fs",
-      "os",
-      "path",
-      "child_process",
-      "fs/promises",
-      "util",
-      "say",
-      "isomorphic-fetch",
-      "crypto",
-      "uuid",
-      "puppeteer",
-      "puppeteer-screen-recorder",
-      "@fullstackcraftllc/codevideo-types",
-    ],
+    external
   },
   // type declarations
   {
@@ -47,20 +50,6 @@ export default [
       },
     ],
     plugins: [dts()],
-    external: [
-      "fs",
-      "os",
-      "path",
-      "child_process",
-      "fs/promises",
-      "util",
-      "say",
-      "isomorphic-fetch",
-      "crypto",
-      "uuid",
-      "puppeteer",
-      "puppeteer-screen-recorder",
-      "@fullstackcraftllc/codevideo-types",
-    ],
+    external
   },
 ];

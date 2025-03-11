@@ -29,11 +29,11 @@ import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFro
 const videoOptions: IGenerateVideoFromActionsOptions = {
   actions: [
     {
-      name: "speak-before",
+      name: "author-speak-before",
       value: "I'm gonna type some code!"
     },
     {
-      name: "type-editor",
+      name: "editor-type",
       value: "console.log('Hello, world!');"
     },
   ],
@@ -62,7 +62,7 @@ console.log(guid)
 Clone this repository:
 
 ```bash
-git clone https://github.com/codevideo/codevideo-ai.git
+git clone https://github.com/codevideo/codevideo-backend-engine.git
 ```
 
 Move into the repo:
@@ -97,7 +97,7 @@ That's it! Create any automation you want by creating a new actions (either `.js
 
 Looks like GitHub isn't very friendly for video embeds, you can see a few examples and a Web MVP [on our website at codevideo.ai](https://codevideo.io/ai).
 
-Implementation of a Fibonacci function in TypeScript in a Monaco editor at `localhost`, driven by puppeteer:
+Implementation of a Fibonacci function in TypeScript in a Monaco editor in a browser at `localhost`, driven by puppeteer:
 
 - [TypeScript Fibonacci implementation](./video-examples/fibonacci.mp4)
 
@@ -170,15 +170,15 @@ Here is an example of an action file, the very same one used to drive the hello-
 ```json
 [
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "To represent that this file is 'index.js', I'll just put a comment here"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "// index.js"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "Then, we'll add a simple console.log statement to the file."
   },
   {
@@ -186,11 +186,11 @@ Here is an example of an action file, the very same one used to drive the hello-
     "value": "1"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "console.log('Hello, world!');"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "For example, if I wanted to write the value of some variable, I could do that with console.log."
   },
   {
@@ -198,7 +198,7 @@ Here is an example of an action file, the very same one used to drive the hello-
     "value": "29"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "const myVariable = 'Important variable I want to keep track of';"
   },
   {
@@ -206,11 +206,11 @@ Here is an example of an action file, the very same one used to drive the hello-
     "value": "1"
   },
   {
-    "name": "type-editor",
+    "name": "editor-type",
     "value": "console.log(myVariable);"
   },
   {
-    "name": "speak-before",
+    "name": "author-speak-before",
     "value": "And that's it! We now know how to use the console.log function in JavaScript."
   }
 ]
@@ -221,15 +221,15 @@ Alternatively, you can define the actions directly in TypeScript. This is useful
 ```ts
 const helloWorldActions: Array<IAction> = [
   {
-    name: "speak-before",
+    name: "author-speak-before",
     value: "To represent that this file is 'index.js', I'll just put a comment here"
   },
   {
-    name: "type-editor",
+    name: "editor-type",
     value: "// index.js"
   },
   {
-    name: "speak-before",
+    name: "author-speak-before",
     value: "Then, we'll add a simple console.log statement to the file."
   },
   {
@@ -237,11 +237,11 @@ const helloWorldActions: Array<IAction> = [
     value: "1"
   },
   {
-    name: "type-editor",
+    name: "editor-type",
     value: "console.log('Hello, world!');"
   },
   {
-    name: "speak-before",
+    name: "author-speak-before",
     value: "For example, if I wanted to write the value of some variable, I could do that with console.log."
   },
   {
@@ -249,7 +249,7 @@ const helloWorldActions: Array<IAction> = [
     value: "29"
   },
   {
-    name: "type-editor",
+    name: "editor-type",
     value: "const myVariable = 'Important variable I want to keep track of';"
   },
   {
@@ -257,11 +257,11 @@ const helloWorldActions: Array<IAction> = [
     value: "1"
   },
   {
-    name: "type-editor",
+    name: "editor-type",
     value: "console.log(myVariable);"
   },
   {
-    name: "speak-before",
+    name: "author-speak-before",
     value: "And that's it! We now know how to use the console.log function in JavaScript."
   }
 ]
@@ -337,10 +337,16 @@ A few caveats are required to properly run desktop automation actions:
 - Need exactly one 1920x1080 monitor
 - The desktop to the right of where you issue the above script must be an empty instance of Visual Studio Code
 
-## Experimental: Visual Studio Code on the Web
+## Broken / Experimental: Visual Studio Code on the Web
 
 ```bash
-npm run visual-studio-code-web-driver ./examples/hello-world-visual-studio-web.json sayjs
+npm run visual-studio-code-web-driver ./examples/generic-sort-function-with-typescript.json sayjs
+```
+
+## Broken / Experimental: Visual Studio Code on a local Electron
+
+```bash
+npm run visual-studio-code-electron-driver ./examples/generic-sort-function-with-typescript.json sayjs
 ```
 
 ## Patches!

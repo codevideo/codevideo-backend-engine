@@ -1,38 +1,38 @@
 [
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Let's start by creating our core LogRotator implementation. We'll begin by defining the interfaces and basic structure we'll need. The LogRotator will need to handle file operations and time-based scheduling, so we'll inject these dependencies through our constructor."
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "First, let's create our interface in a new file called ILogRotator.cs"
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "using System.IO.Abstractions;\nusing Microsoft.Extensions.TimeProvider;\n\nnamespace LogRotator;\n\npublic interface ILogRotator : IDisposable\n{\n    // Configure rotation settings\n    void Configure(LogRotationOptions options);\n    \n    // Start the rotation process\n    Task StartAsync(CancellationToken cancellationToken = default);\n    \n    // Stop the rotation process\n    Task StopAsync(CancellationToken cancellationToken = default);\n}"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Now let's define our options record that will contain all the configuration settings for our log rotation."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\npublic record LogRotationOptions\n{\n    public string LogDirectory { get; init; } = string.Empty;\n    public string FilePattern { get; init; } = \"*.log\";\n    public TimeSpan RotationInterval { get; init; } = TimeSpan.FromDays(1);\n    public int RetentionDays { get; init; } = 30;\n    public bool CompressRotatedLogs { get; init; } = true;\n}"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Now, let's create our main LogRotator implementation in a new file called LogRotator.cs. We'll start with our class declaration and dependencies."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\nusing System.IO.Abstractions;\nusing Microsoft.Extensions.TimeProvider;\n\nnamespace LogRotator;\n\npublic class LogRotator : ILogRotator\n{\n    private readonly IFileSystem _fileSystem;\n    private readonly TimeProvider _timeProvider;\n    private LogRotationOptions _options = new();\n    private ITimer? _rotationTimer;\n    private bool _disposed;\n\n    public LogRotator(\n        IFileSystem fileSystem,\n        TimeProvider timeProvider)\n    {\n        _fileSystem = fileSystem;\n        _timeProvider = timeProvider;\n    }\n}"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Notice how we're injecting both IFileSystem and TimeProvider - this makes our code testable from the start. We can substitute these dependencies in our tests to control both file operations and time itself!"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Let's implement our Configure method first."
     },
     {
@@ -44,83 +44,83 @@
         "value": "2"
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "    public void Configure(LogRotationOptions options)\n    {\n        _options = options;\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Now let's implement the StartAsync method, which will set up our rotation timer."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    public async Task StartAsync(CancellationToken cancellationToken = default)\n    {\n        if (_rotationTimer != null)\n        {\n            throw new InvalidOperationException(\"LogRotator is already started\");\n        }\n\n        await PerformRotation(cancellationToken);\n        \n        _rotationTimer = _timeProvider.CreateTimer(\n            async (state) => await PerformRotation(cancellationToken),\n            state: null,\n            dueTime: CalculateNextRotationTime(),\n            period: _options.RotationInterval);\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "For clean shutdown, we'll implement the StopAsync method."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    public async Task StopAsync(CancellationToken cancellationToken = default)\n    {\n        if (_rotationTimer is IAsyncDisposable asyncDisposable)\n        {\n            await asyncDisposable.DisposeAsync();\n        }\n        else\n        {\n            _rotationTimer?.Dispose();\n        }\n        _rotationTimer = null;\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Now let's implement our core rotation logic in the PerformRotation method."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    private async Task PerformRotation(CancellationToken cancellationToken)\n    {\n        EnsureDirectoryExists();\n\n        var files = _fileSystem.Directory.GetFiles(\n            _options.LogDirectory, \n            _options.FilePattern);\n\n        foreach (var file in files)\n        {\n            await RotateFileIfNeeded(file, cancellationToken);\n        }\n\n        await CleanupOldFiles(cancellationToken);\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "We'll need a helper method to calculate when the next rotation should occur."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    private TimeSpan CalculateNextRotationTime()\n    {\n        var now = _timeProvider.GetLocalNow();\n        var next = now.Date.Add(_options.RotationInterval);\n        \n        while (next <= now)\n        {\n            next = next.Add(_options.RotationInterval);\n        }\n\n        return next - now;\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Let's add our directory management method."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    private void EnsureDirectoryExists()\n    {\n        if (!_fileSystem.Directory.Exists(_options.LogDirectory))\n        {\n            _fileSystem.Directory.CreateDirectory(_options.LogDirectory);\n        }\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Now for the actual file rotation logic."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    private async Task RotateFileIfNeeded(string filePath, \n        CancellationToken cancellationToken)\n    {\n        var fileInfo = _fileSystem.FileInfo.FromFileName(filePath);\n        var now = _timeProvider.GetLocalNow();\n\n        if (fileInfo.LastWriteTime + _options.RotationInterval > now)\n        {\n            return;\n        }\n\n        var newName = $\"{filePath}.{now:yyyyMMdd-HHmmss}\";\n        _fileSystem.File.Move(filePath, newName);\n\n        if (_options.CompressRotatedLogs)\n        {\n            await CompressFile(newName, cancellationToken);\n        }\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "We'll also need to implement our cleanup logic for old files."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    private async Task CleanupOldFiles(CancellationToken cancellationToken)\n    {\n        var now = _timeProvider.GetLocalNow();\n        var cutoff = now.AddDays(-_options.RetentionDays);\n\n        var oldFiles = _fileSystem.Directory\n            .GetFiles(_options.LogDirectory, $\"{_options.FilePattern}.*\")\n            .Where(f => \n            {\n                var fileInfo = _fileSystem.FileInfo.FromFileName(f);\n                return fileInfo.LastWriteTime < cutoff;\n            });\n\n        foreach (var file in oldFiles)\n        {\n            _fileSystem.File.Delete(file);\n        }\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "For now, we'll leave our compression method as a stub - we'll implement it in the next chapter."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    private async Task CompressFile(string filePath, \n        CancellationToken cancellationToken)\n    {\n        // We'll implement compression in the next chapter\n        throw new NotImplementedException();\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "Finally, let's implement our Dispose method for proper cleanup."
     },
     {
-      "name": "type-editor",
+      "name": "editor-type",
       "value": "\n\n    public void Dispose()\n    {\n        if (!_disposed)\n        {\n            _rotationTimer?.Dispose();\n            _disposed = true;\n        }\n    }"
     },
     {
-      "name": "speak-before",
+      "name": "author-speak-before",
       "value": "And that's our initial LogRotator implementation! Notice how we've made every external dependency injectable. This makes our code inherently testable - we can control file operations through IFileSystem and time-based operations through TimeProvider. In the next chapter, we'll implement the compression functionality and write our first unit tests to verify the LogRotator's behavior!"
     }
   ]
