@@ -1,6 +1,6 @@
+import { getAudioArrayBufferElevenLabs } from "../elevenlabs/getAudioArrayBufferElevenLabs.js";
 import { loadActions } from "../io/loadActions.js";
 import { sha256Hash } from "../utils/sha256Hash.js";
-import { getAudioArrayBufferElevenLabs } from "../elevenlabs/saveToFileElevenLabs.js";
 import { uploadFileToSpaces } from "../utils/uploadFileToSpaces.js";
 import dotenv from "dotenv";
 

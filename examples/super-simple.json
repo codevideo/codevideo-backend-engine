@@ -4,11 +4,15 @@
     "value": "To showcase how this tool works, we'll do a simple hello world example."
   },
   {
-    "name": "editor-type",
-    "value": "console.log('Hello World!');"
+    "name": "file-explorer-create-file",
+    "value": "hello-world.js"
   },
   {
-    "name": "author-speak-before",
-    "value": "Nice, that looks pretty good! Pretty cool tool, right?!"
+    "name": "file-explorer-open-file",
+    "value": "hello-world.js"
+  },
+  {
+    "name": "editor-type",
+    "value": "console.log('Hello World!');"
   }
 ]

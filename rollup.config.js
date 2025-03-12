@@ -18,6 +18,7 @@ const external = [
   "puppeteer-screen-recorder",
   "@fullstackcraftllc/codevideo-types",
   "node-fetch",
+  "@aws-sdk/client-s3"
 ]
 
 export default [

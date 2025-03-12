@@ -1,6 +1,6 @@
 {
   "name": "@fullstackcraftllc/codevideo-backend-engine",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "description": "Create shockingly realistic automated software videos! The backend / CLI tool from CodeVideo to create videos.",
   "type": "module",
   "main": "dist/index.js",
@@ -44,7 +44,7 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
-    "@fullstackcraftllc/codevideo-types": "^2.0.35",
+    "@fullstackcraftllc/codevideo-types": "^2.0.37",
     "dotenv": "^16.4.5",
     "isomorphic-fetch": "^3.0.0",
     "jimp": "^0.22.10",
