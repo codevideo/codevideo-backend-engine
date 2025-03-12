@@ -1,11 +1,9 @@
 import fs from "fs";
 import os from "os";
-import { addAudioToVideo } from "../audio/addAudioToVideo.js";
-import { buildAudioFile } from "../audio/buildAudioFile.js";
 import { convertSpeakActionsToAudio } from "../audio/convertScriptPropertiesToAudio.js";
 import { runPuppeteerAutomation } from "../puppeteer/runPuppeteerAutomation.js";
-import { IGenerateVideoFromActionsOptions } from "../interfaces/IGenerateVideoFromActionsOptions.js";
 import { v4 as uuidv4 } from 'uuid';
+import { IGenerateVideoFromActionsOptions } from "@fullstackcraftllc/codevideo-types";
 
 // using series of functions
 export const generateVideoFromActionsV2 = async (options: IGenerateVideoFromActionsOptions): Promise<{videoBuffer: Buffer, pathToFile: string, guid: string}> => {

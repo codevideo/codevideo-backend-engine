@@ -1,5 +1,5 @@
+import { IGenerateVideoFromActionsOptions } from "@fullstackcraftllc/codevideo-types";
 import { generateVideoFromActions } from "./utils/generateVideoFromActions.js";
-import { IGenerateVideoFromActionsOptions } from "./interfaces/IGenerateVideoFromActionsOptions.js";
 
 const main = async () => {
   const videoOptions: IGenerateVideoFromActionsOptions = {
