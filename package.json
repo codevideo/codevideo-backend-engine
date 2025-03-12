@@ -1,6 +1,6 @@
 {
   "name": "@fullstackcraftllc/codevideo-backend-engine",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Create shockingly realistic automated software videos! The backend / CLI tool from CodeVideo to create videos.",
   "type": "module",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf ./dist/* && rm -rf ./audio/*.mp3 && rm -rf ./video/*.mp4",
     "make-video": "tsc && node ./dist/make-video.js",
-    "postinstall": "npm install ./sources/nut.js-4.2.0.tar.gz && patch-package",
+    "postinstall": "patch-package",
     "scripts-char-count": "tsc && node ./dist/scripts/scripts-char-count.js",
     "scripts-health-check": "tsc && node ./dist/scripts/scripts-health-check.js",
     "code-health-check": "tsc && node ./dist/scripts/code-health-check.js",

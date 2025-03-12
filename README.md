@@ -101,7 +101,7 @@ Implementation of a Fibonacci function in TypeScript in a Monaco editor in a bro
 
 - [TypeScript Fibonacci implementation](./video-examples/fibonacci.mp4)
 
-Using the actual Visual Studio Code application, demonstrating how to use JavaScript's console.log function in Node.js, including opening the file and starting the script from the terminal. Driven by [`nut-js`](https://github.com/nut-tree/nut.js)
+Using the actual Visual Studio Code application, demonstrating how to use JavaScript's console.log function in Node.js, including opening the file and starting the script from the terminal. Driven by [`nut-js`](https://github.com/nut-tree/nut.js). Unfortunately nut.js has gone to tar installs only and we've opted for a go-based solution for desktop automation.
 
 - [JavaScript console.log in Node.js](./video-examples/console-log.mov)
 
@@ -352,7 +352,3 @@ npm run visual-studio-code-electron-driver ./examples/generic-sort-function-with
 ## Patches!
 
 Due to an ugly bug with `fluent-ffmpeg`, which is used by `puppeteer-screen-recorder`, the `fluent-ffmpeg` library has been patched with `patch-package`. For those interested, the patch is in `./patches/fluent-ffmpeg+2.1.2.patch`.
-
-## Nut.js
-
-Nut.js is an open source package but must be built from source as the creator has opted to make easy install from the CLI only for paying licensed customers (more power to him!). Codevideo will be more than happy to buy a license once this product starts generating revenue. The current source of a recent version of Nut.js, 4.2.0 is in the `sources` folder and installed in the `postinstall` script along with `patch-package`
